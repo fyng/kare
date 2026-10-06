@@ -12,7 +12,7 @@ on it.
 | `ga-kit.css`, `ga-kit.js` | Layout, type roles, motion, lint. The CSS imports `../core/tokens.css` |
 | `ga-charts.js` | Chart forms (`../core/charts/`) |
 | `ga-bio.js` | Cells, tissue, body maps, zooms (`../core/illustration.md`) |
-| `ga-schematic.js` | Blocks, cells, grids, panels, wires, flow bands, brackets, steps, tracks and contact maps for schematics (`../core/illustration.md`, *Schematics*) |
+| `ga-schematic.js` | Blocks, cells, grids, panels, state cards, wires, flow bands, brackets, steps, tracks and contact maps for schematics (`../core/illustration.md`, *Schematics*) |
 | `anatomy.js` | The anatomy the body map draws: a curated Expression Atlas anatomogram (CC BY 4.0). Load it before `ga-bio.js` |
 | `icons.js` | Icons (`../core/icons.md`) |
 | `render.cjs` | PNG / MP4 / WebM renderer; also renders the figure blocks of Markdown specs |
@@ -95,7 +95,7 @@ plot, left-aligned at `yTitleX`.
 | `units` | Unit columns ([26](../core/charts/forms/26-unit-columns.md)) |
 | `oncoprint` | Heatmap with categorical cells, the oncoprint ([07](../core/charts/forms/07-heatmap.md)) |
 | `GA.schematic` → `block`, `cells`, `op`, `wire`, `port`, `flow`, `bracket`; `panel`, `grid` for a block opened | Architecture diagram ([27](../core/charts/forms/27-architecture-diagram.md)) |
-| `GA.schematic` → `step`, with `block`, `cells`, `wire` | Procedure schematic ([28](../core/charts/forms/28-procedure-schematic.md)) |
+| `GA.schematic` → `step`, `state`, `fn`, with `block`, `cells`, `wire` | Procedure schematic ([28](../core/charts/forms/28-procedure-schematic.md)) |
 | `GA.schematic` → `tracks` (`peaks`, `signal`, `arcs`, `ticks`, `events`, `spans`; `stripes`, pill columns), `contact`, with `bracket`, `cells` | Data schematic ([29](../core/charts/forms/29-data-schematic.md)) |
 
 The chart forms' figure blocks (`../core/charts/forms/`) use every mark.

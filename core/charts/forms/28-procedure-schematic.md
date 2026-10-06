@@ -4,7 +4,7 @@ name: Procedure schematic
 kind: schematic
 family: schematic
 job: ["The steps of a method: what each step does and what passes between them"]
-kit: [GA.schematic.block, GA.schematic.cells, GA.schematic.wire, GA.schematic.port, GA.schematic.step, GA.glyph]
+kit: [GA.schematic.block, GA.schematic.cells, GA.schematic.wire, GA.schematic.port, GA.schematic.step, GA.schematic.state, GA.schematic.fn]
 sources: ["Avsec et al., Nature 2026, Fig. 1b,c", "Silver et al., Nature 2016, Fig. 3", "Oh et al., Nature 2025, Fig. 1"]
 see_also: [form-27, form-29]
 ---
@@ -56,54 +56,78 @@ ga.text("gradient", { x: 456, y: 16, role: "note", size: 13 });
 ## Steps in a row
 
 For a procedure whose steps act on one object (a search tree, a cohort, a record):
-draw the object once per step, in a row of columns, and ink only what that step
-touches.
+draw the object once per step, in a row of columns, each state as a small cartoon of
+the thing itself, and ink only what that step touches.
 
 - Each column opens with the step's number in `prussian` and its name in `ink`,
   both 500 (`S.step`). The columns share a top line and a width.
-- **The same object in every column, in the same place.** What the step acts on is
-  `ink` at 2.5 px; the rest of the object is `context` at 1.5 px, so the eye moves
-  from step to step along the inked part.
-- What a step adds is `prussian` (new nodes, a value, an update running back up).
-  Notation (*v*, *Q*) is the `math` role, used where the paper uses it.
+- **A state is a cartoon, not a dot.** Draw the object at each node small, the way
+  the paper's reader knows it: a patient's record as a card of mini tracks, a board
+  as a board. A child is its parent with the action added, in that action's colour,
+  so the tree reads as histories branching.
+- **The same tree in every column, in the same place**, depth levels on dashed
+  `rule` guides across the figure. What the step acts on is `ink`: states with an
+  `ink-2` outline and their colours, edges 2.5 px with a head. The rest is
+  `context`: grey cards, 1.5 px edges.
+- **What a step adds is `prussian`**: new states outlined in it, a rollout as a
+  dashed 2.5 px arrow, the value running back up the path. Values are written as the
+  paper writes them, a function of the state, *v*( ) and *r*( ) (`S.fn`), and edge
+  quantities (*Q*, *P*) sit beside their edge in `math`, `ink` on the chosen edge
+  and `muted` on the others.
 
-![A tree search in four steps: select a path, expand its leaf, evaluate the new leaf, back the value up the path; the part each step touches is inked and the rest is grey](out/28-procedure-schematic.steps-in-a-row.png)
+![A treatment search in four steps over patient-record cards: select a path by Q, expand its leaf into two new histories, evaluate one by its value and a rollout to the end of the record, back the value up the path](out/28-procedure-schematic.steps-in-a-row.png)
 
-```js figure=steps-in-a-row w=640 h=300
+```js figure=steps-in-a-row w=816 h=456
 const S = GA.schematic(ga);
-const ink = "var(--ink)", ctx = "var(--context)", pru = "var(--prussian)";
-// one tree, the same in every column: root, two children, two grandchildren on the right
-const nodes = (cx) => ({ r: { x: cx, y: 76 }, a: { x: cx - 34, y: 126 }, b: { x: cx + 34, y: 126 }, c: { x: cx + 12, y: 176 }, d: { x: cx + 56, y: 176 }, e: { x: cx - 6, y: 226 }, f: { x: cx + 30, y: 226 } });
-const EDGES = [["r", "a"], ["r", "b"], ["b", "c"], ["b", "d"]];
-const shorten = (p, q, k) => { const L = Math.hypot(q.x - p.x, q.y - p.y); return { x: +(q.x - ((q.x - p.x) / L) * k).toFixed(1), y: +(q.y - ((q.y - p.y) / L) * k).toFixed(1) }; };
-// per step: the nodes it touches (ink), the nodes it adds or scores (prussian), its inked edges
-const STEPS = [
-  { name: "Select", ink: "rbc", pru: "", edges: ["r-b", "b-c"] },
-  { name: "Expand", ink: "c", pru: "ef", edges: [] },
-  { name: "Evaluate", ink: "", pru: "e", edges: [] },
-  { name: "Back up", ink: "rbce", pru: "", edges: [] },
+const INK = "var(--ink)", CTX = "var(--context)", PRU = "var(--prussian)", MUT = "var(--muted)";
+// a state is the record so far: earlier therapy, then one interval per action (a, b)
+const ACT = { a: "var(--cat-1)", b: "var(--cat-2)" };
+const record = (acts) => [
+  { kind: "spans", data: [[0, 0.28, "var(--ink-2)"], ...acts.map((c, k) => [0.3 + 0.17 * k + 0.01, 0.3 + 0.17 * (k + 1), ACT[c]])] },
+  { kind: "events", data: [0.06, 0.16, 0.26, ...acts.map((_, k) => 0.38 + 0.17 * k)] },
 ];
+const HIST = { R: "", A: "a", B: "b", C: "ba", D: "bb", E: "baa", F: "bab", T: "baab" };
+const KIDS = { R: ["A", "B"], B: ["C", "D"], C: ["E", "F"] };
+const at = (x0) => ({ R: [x0 + 90, 96], A: [x0 + 40, 172], B: [x0 + 130, 172], C: [x0 + 92, 248], D: [x0 + 166, 248], E: [x0 + 52, 324], F: [x0 + 128, 324], T: [x0 + 52, 412] });
+// per step: tone of each state, inked edges, edges a step adds, the edge label
+const STEPS = [
+  { name: "Select", nodes: "RABCD", ink: "RBC", add: "", edges: ["R-B", "B-C"], label: "Q" },
+  { name: "Expand", nodes: "RABCDEF", ink: "C", add: "EF", edges: [], newEdges: ["C-E", "C-F"], label: "P" },
+  { name: "Evaluate", nodes: "RABCDEFT", ink: "ET", add: "", edges: [] },
+  { name: "Back up", nodes: "RABCDEF", ink: "RBCE", add: "", edges: [], up: ["E-C", "C-B", "B-R"] },
+];
+// depth guides, across every column
+ga.raw([134, 210, 286].map((y) => `<path d="M16 ${y}H800" stroke="var(--rule)" stroke-width="1" stroke-dasharray="3 3"/>`).join(""));
+const H = 19; // half a card's height
+const edgeLabel = (p, q, str, color) => {
+  const mx = (p[0] + q[0]) / 2, my = (p[1] + q[1]) / 2, right = q[0] >= p[0];
+  ga.text(`*${str}*`, { x: mx + (right ? 14 : -14), y: my - 10, anchor: right ? "start" : "end", role: "math", size: 15, color });
+};
 STEPS.forEach((st, i) => {
-  const x0 = 24 + i * 156, cx = x0 + 52, N = nodes(cx);
+  const x0 = 16 + i * 196, P = at(x0);
   S.step(i + 1, st.name, { x: x0, y: 18 });
-  const edges = i === 0 ? EDGES : [...EDGES, ["c", "e"], ["c", "f"]];
-  let m = "";
-  for (const [p, q] of edges) {
-    if (i === 3 && ["r-b", "b-c", "c-e"].includes(`${p}-${q}`)) continue; // drawn as the update below
-    const on = st.edges.includes(`${p}-${q}`), add = i === 1 && p === "c";
-    m += `<path d="M${N[p].x} ${N[p].y}L${N[q].x} ${N[q].y}" stroke="${on ? ink : add ? pru : ctx}" stroke-width="${on || add ? 2.5 : 1.5}"/>`;
-  }
-  for (const k of i === 0 ? "rabcd" : "rabcdef") m += GA.glyph("circle", N[k].x, N[k].y, { size: 14, fill: st.pru.includes(k) ? pru : st.ink.includes(k) ? ink : ctx });
-  ga.raw(m);
+  for (const [p, kids] of Object.entries(KIDS))
+    for (const q of kids) {
+      if (!st.nodes.includes(q)) continue;
+      const key = `${p}-${q}`, on = st.edges.includes(key), add = (st.newEdges || []).includes(key);
+      if ((st.up || []).includes(`${q}-${p}`)) continue; // drawn as the update below
+      const color = on ? INK : add ? PRU : CTX;
+      S.wire([{ x: P[p][0], y: P[p][1] + H + 4 }, { x: P[q][0], y: P[q][1] - H - 5 }], { color, width: on || add ? 2.5 : 1.5, headSize: on || add ? 7 : 5.5 });
+      if (st.label && (p === "R" || p === "B" ? i === 0 : i === 1) && kids.length) edgeLabel(P[p], P[q], st.label, on ? INK : add ? PRU : MUT);
+    }
+  const card = {};
+  for (const k of st.nodes) card[k] = S.state({ cx: P[k][0], cy: P[k][1], rows: record(HIST[k].split("").filter(Boolean)), tone: st.add.includes(k) ? "add" : st.ink.includes(k) ? "ink" : "context" });
   if (i === 2) {
-    S.wire([{ x: N.e.x, y: N.e.y + 12 }, { x: N.e.x, y: 262 }], { tone: "minor", color: pru, dash: true });
-    ga.text("*v*", { x: N.e.x + 8, y: 250, role: "math", color: pru });
+    S.wire([{ x: P.E[0], y: P.E[1] + H + 4 }, { x: P.T[0], y: P.T[1] - H - 5 }], { color: PRU, width: 2.5, dash: true });
+    S.fn(card.E, "v", { color: PRU });
+    S.fn(card.T, "r", { color: PRU });
   }
-  if (i === 3) {
-    // the value runs back up the selected path
-    for (const [p, q] of [["e", "c"], ["c", "b"], ["b", "r"]]) S.wire([shorten(N[q], N[p], 10), shorten(N[p], N[q], 11)], { tone: "minor", color: pru, width: 2.5 });
-    ga.text("*Q*", { x: N.b.x + 14, y: 84, role: "math", color: pru });
-  }
+  if (i === 3)
+    for (const key of st.up) {
+      const [p, q] = key.split("-");
+      S.wire([{ x: P[p][0], y: P[p][1] - H - 4 }, { x: P[q][0], y: P[q][1] + H + 5 }], { color: PRU, width: 2.5, headSize: 7 });
+      edgeLabel(P[q], P[p], "Q", PRU);
+    }
 });
 ```
 
@@ -114,4 +138,4 @@ STEPS.forEach((st, i) => {
 | Block | 1.5 px outline, 6 px radius, 14 px label | 0.5 pt, 0.6 mm radius, 6–7 pt |
 | Forward wire / feedback wire | 2.5 px / 1.5 px, `5 5` dash | 1 pt / 0.5 pt, `2 2` dash |
 | Step number and name | 16 px, 500 | 7 pt, 500 (the panel's own letter stays the panel letter) |
-| Tree node | 14 px | 3 mm |
+| State card | 60 × 38 px, 1.5 px outline | 12 × 8 mm, 0.5 pt |

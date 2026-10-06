@@ -14,6 +14,8 @@
 //   S.contact({ x, y, w, n, band, fill });         // a pairwise map under the axis, turned 45°
 //   S.grid({ x, y, rows, cols, cell, fill });      // a matrix (a pair representation)
 //   S.panel({ x, y, w, h, label });                // one block opened, its parts inside
+//   S.state({ cx, cy, rows, tone });               // a cartoon of a state (a mini record)
+//   S.fn(item, "v", { color });                    // a function of a state: v( … )
 //
 // Text goes through the kit and blocks register as solids, so the lint covers both.
 (function () {
@@ -175,6 +177,38 @@
       const a = ga.text(String(num), { x: o.x, y: o.y, role: "label", size, weight: 500, color: "var(--prussian)", at });
       const b = ga.text(name, { x: a.r + 0.5 * size, y: o.y, role: "label", size, weight: 500, color: o.dim ? "var(--muted)" : "var(--ink)", at });
       return ga.union(a, b);
+    };
+
+    // ---- state: a cartoon of the object a step acts on (a record, a board), small
+    // enough to repeat in a tree. A card (paper, 1.5 px outline, 4 px radius) holding
+    // mini tracks: rows [{ kind: "spans" | "events", data, colors? }], data as in
+    // S.tracks (spans may carry a colour: [a, b, colour]). tone "ink" draws the marks
+    // in their colours with an ink-2 outline; "context" greys the whole card out;
+    // "add" outlines it in prussian (a state a step creates).
+    S.state = (o) => {
+      const w = o.w || 60, h = o.h || 38, x = o.cx - w / 2, y = o.cy - h / 2, tone = o.tone || "ink";
+      const grey = tone === "context", edge = grey ? "var(--context)" : tone === "add" ? "var(--prussian)" : "var(--ink-2)";
+      const rows = o.rows || [], pitch = (h - 6) / Math.max(1, rows.length), X = (u) => f1(x + 5 + u * (w - 10));
+      let m = `<rect x="${f1(x)}" y="${f1(y)}" width="${w}" height="${h}" rx="4" fill="var(--paper)" stroke="${edge}" stroke-width="${tone === "add" ? 2 : 1.5}"/>`;
+      rows.forEach((r, i) => {
+        const by = f1(y + 3 + (i + 1) * pitch - 2);
+        m += `<path d="M${X(0)} ${by}H${X(1)}" stroke="var(--rule)" stroke-width="1"/>`;
+        const col = (c) => (grey ? "var(--context)" : c || r.color || "var(--ink-2)");
+        if (r.kind === "spans") for (const [a, b, c] of r.data) m += `<rect x="${X(a)}" y="${f1(by - 6)}" width="${f1((b - a) * (w - 10))}" height="5" fill="${col(c)}"/>`;
+        else for (const u of r.data) m += `<circle cx="${X(u)}" cy="${f1(by - 3.5)}" r="2.4" fill="${col()}"/>`;
+      });
+      const it = ga.raw(m, { at: o.at, anim: "pop" });
+      anchors(it, box(x, y, x + w, y + h));
+      Object.assign(it, { kind: "rect", lint: o.lint !== false, face: it.box });
+      return it;
+    };
+
+    // ---- fn: a function applied to a state, written as the paper writes it,
+    // name(state): the name in math to the left, thin parentheses around the item
+    S.fn = (it, name, o = {}) => {
+      const col = o.color || "var(--ink)", B = it.face || it.box, y0 = B.y0 - 3, y1 = B.y1 + 3, l = B.x0 - 5, r = B.x1 + 5;
+      ga.raw(`<path d="M${l} ${y0}Q${l - 6} ${B.cy} ${l} ${y1}M${r} ${y0}Q${r + 6} ${B.cy} ${r} ${y1}" fill="none" stroke="${col}" stroke-width="1.5" stroke-linecap="round"/>`, { at: o.at, anim: "fade" });
+      return ga.text(`*${name}*`, { x: l - 6, y: B.cy - 0.5 * GA.ROLE.math.size - 2, anchor: "end", role: "math", color: col, at: o.at });
     };
 
     // ---- tracks: one row per kind of record on a shared axis from x to x + w.

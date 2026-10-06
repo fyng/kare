@@ -120,6 +120,11 @@ The kit's `GA.schematic` layer (`../kit/ga-schematic.js`) draws each part below.
 - **Steps.** A step's number in `prussian` and its name in `ink`, both 500, open
   each column of a procedure. Within a step, what the step acts on is `ink` and the
   rest `context`, so the same object read across the columns shows the procedure.
+- **States are cartoons.** Where a procedure moves between states (a search, a
+  treatment sequence), draw each state small as the thing itself, a **state card**
+  (a patient's record as mini tracks, a board as a board), not as a dot, and write
+  a function of a state as the paper does, *v*( ) around the card (form 28, *Steps
+  in a row*).
 - **Colour.** The model's parts take the blue of the model role; kinds of record take
   identity slots in order (`color.md`); an ordered property of the data (resolution,
   depth, time) takes steps of one ramp. Everything else is `ink-2`, `context` or
