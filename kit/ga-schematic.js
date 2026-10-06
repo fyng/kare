@@ -11,6 +11,9 @@
 //   S.bracket({ x, y0, y1, side, label });         // a square bracket: repeats (4×), spans, groups
 //   S.step("1", "Encode", { x, y });               // a step's number and name
 //   S.tracks({ x, y, w, rows, cols, patches });    // records on a shared axis, a table at right
+//   S.contact({ x, y, w, n, band, fill });         // a pairwise map under the axis, turned 45°
+//   S.grid({ x, y, rows, cols, cell, fill });      // a matrix (a pair representation)
+//   S.panel({ x, y, w, h, label });                // one block opened, its parts inside
 //
 // Text goes through the kit and blocks register as solids, so the lint covers both.
 (function () {
@@ -174,38 +177,91 @@
       return ga.union(a, b);
     };
 
-    // ---- tracks: one row per record type on a shared axis from x to x + w.
-    //   rows: [{ name, kind: "events" | "spans" | "ticks" | "signal", data, color }]
+    // ---- tracks: one row per kind of record on a shared axis from x to x + w.
+    //   rows: [{ name, kind, data, color }], kind:
     //     events: positions 0..1 (dots); ticks: positions 0..1 (genomic marks);
-    //     spans: [[a, b], …] (intervals); signal: values 0..1 at even steps (coverage)
-    //   patches: n dashed dividers that cut the axis into n equal patches
-    //   cols: [{ title, values, dx }]: a table at right, one value per row, dx from the axis end
-    // Returns { rowY(i): baseline, x0, x1, top, bottom, patchX(k) }.
+    //     spans: [[a, b], …] (intervals); signal: values 0..1 at even steps (a smooth
+    //     profile); peaks: values 0..1 per bin (coverage, as bars); arcs: [[a, b], …]
+    //     (junctions, contacts between two positions)
+    //   patches: n dashed dividers that cut the axis into n equal patches;
+    //   stripes: every other patch in wash
+    //   cols: [{ title, values, dx, pill }]: a table at right, one value per row, its
+    //     right edge dx from the axis end; pill: (i) => fill sets each value in a pill
+    // Returns { rowY(i): baseline, x0, x1, top, bottom, patchX(k), colX(c) }.
     S.tracks = (o) => {
       const pitch = o.pitch || 26, n = o.rows.length, x0 = o.x, x1 = o.x + o.w, top = o.y, bottom = o.y + n * pitch;
-      const X = (u) => f1(x0 + u * o.w), base = (i) => top + (i + 1) * pitch - 6;
+      const X = (u) => f1(x0 + u * o.w), base = (i) => top + (i + 1) * pitch - 6, P = o.patches || 1;
       let back = "", marks = "";
-      if (o.patches) for (let k = 1; k < o.patches; k++) back += `<path d="M${X(k / o.patches)} ${top - 4}V${bottom}" stroke="var(--rule)" stroke-width="1.5" stroke-dasharray="3 3"/>`;
+      if (o.stripes) for (let k = 1; k < P; k += 2) back += `<rect x="${X(k / P)}" y="${top - 4}" width="${f1(o.w / P)}" height="${bottom - top + 4}" fill="var(--wash)"/>`;
+      if (o.patches) for (let k = 1; k < P; k++) back += `<path d="M${X(k / P)} ${top - 4}V${bottom}" stroke="var(--rule)" stroke-width="1.5" stroke-dasharray="3 3"/>`;
       o.rows.forEach((row, i) => {
-        const y = base(i), col = row.color || "var(--ink-2)";
+        const y = base(i), col = row.color || "var(--ink-2)", H = pitch - 10;
         back += `<path d="M${x0} ${y}H${x1}" stroke="var(--rule)" stroke-width="1.5"/>`;
         if (row.kind === "events") for (const u of row.data) marks += `<circle cx="${X(u)}" cy="${y - 6}" r="3.5" fill="${col}"/>`;
         else if (row.kind === "ticks") for (const u of row.data) marks += `<path d="M${X(u)} ${y - 12}V${y - 1}" stroke="${col}" stroke-width="2"/>`;
         else if (row.kind === "spans") for (const [a, b] of row.data) marks += `<rect x="${X(a)}" y="${y - 10}" width="${f1((b - a) * o.w)}" height="7" fill="${col}"/>`;
         else if (row.kind === "signal") {
-          const H = pitch - 10, step = o.w / (row.data.length - 1);
+          const step = o.w / (row.data.length - 1);
           marks += `<path d="M${x0} ${y}${row.data.map((v, j) => `L${f1(x0 + j * step)} ${f1(y - v * H)}`).join("")}L${x1} ${y}Z" fill="${col}"/>`;
-        }
+        } else if (row.kind === "peaks") {
+          const bw = o.w / row.data.length;
+          row.data.forEach((v, j) => { if (v > 0.02) marks += `<rect x="${f1(x0 + j * bw)}" y="${f1(y - v * H)}" width="${f1(bw)}" height="${f1(v * H)}" fill="${col}"/>`; });
+        } else if (row.kind === "arcs")
+          for (const [a, b] of row.data) marks += `<path d="M${X(a)} ${y}Q${f1((+X(a) + +X(b)) / 2)} ${f1(y - Math.min(2 * H, (b - a) * o.w * 0.6))} ${X(b)} ${y}" fill="none" stroke="${col}" stroke-width="1.5"/>`;
         if (row.name) ga.text(row.name, { x: x0 - 10, y: y - 6 - LABEL * 0.6, anchor: "end", role: "label", size: o.size || LABEL, color: "var(--ink-2)", at: o.at });
       });
       ga.raw(back, { at: o.at, anim: "fade", t: 0.4 });
       ga.raw(marks, { at: o.at, anim: "fade", t: 0.5 });
+      const colX = (c) => x1 + c.dx;
       for (const c of o.cols || []) {
-        const cx = x1 + c.dx;
-        ga.text(c.title, { x: cx, y: top - 20, anchor: "end", role: "tick", size: 12, color: "var(--muted)", at: o.at });
-        c.values.forEach((v, i) => v !== null && v !== undefined && ga.text(String(v), { x: cx, y: base(i) - 6 - 12 * 0.6, anchor: "end", role: "tick", size: 12, color: "var(--ink-2)", at: o.at }));
+        ga.text(c.title, { x: colX(c), y: top - 20, anchor: "end", role: "tick", size: 12, color: "var(--muted)", at: o.at });
+        c.values.forEach((v, i) => {
+          if (v === null || v === undefined) return;
+          const cy = base(i) - 6;
+          if (c.pill) ga.pill(String(v), { cx: colX(c) - (c.w || 50) / 2, cy, w: c.w || 50, h: 18, role: "tick", size: 12, fill: c.pill(i), color: "var(--ink)", at: o.at });
+          else ga.text(String(v), { x: colX(c), y: cy - 12 * 0.6, anchor: "end", role: "tick", size: 12, color: "var(--ink-2)", at: o.at });
+        });
       }
-      return { rowY: base, x0, x1, top, bottom, patchX: (k) => X(k / (o.patches || 1)) };
+      return { rowY: base, x0, x1, top, bottom, patchX: (k) => X(k / P), colX };
+    };
+
+    // ---- contact: a pairwise map under an axis, as the upper triangle of an n × n
+    // matrix turned 45° so each cell sits under the midpoint of its two positions;
+    // band keeps cells with j − i < band. fill: (i, j) => colour or null.
+    S.contact = (o) => {
+      const s = o.w / o.n, band = o.band || o.n;
+      let m = "";
+      for (let i = 0; i < o.n; i++)
+        for (let j = i; j < Math.min(o.n, i + band); j++) {
+          const f = o.fill(i, j);
+          if (!f) continue;
+          const cx = o.x + ((i + j + 1) / 2) * s, cy = o.y + ((j - i) + 0.5) * (s / 2), h = s / 2 - 0.6;
+          m += `<path d="M${f1(cx)} ${f1(cy - h)}L${f1(cx + h)} ${f1(cy)}L${f1(cx)} ${f1(cy + h)}L${f1(cx - h)} ${f1(cy)}Z" fill="${f}"/>`;
+        }
+      ga.raw(m, { at: o.at, anim: "fade", t: 0.5 });
+      return { bottom: o.y + band * (s / 2) + s / 4 };
+    };
+
+    // ---- grid: a matrix as square cells, 2 px paper gaps; fill: (i, j) => colour
+    S.grid = (o) => {
+      const c = o.cell || 10;
+      let m = "";
+      for (let i = 0; i < o.rows; i++)
+        for (let j = 0; j < o.cols; j++) m += `<rect x="${f1(o.x + j * c + 1)}" y="${f1(o.y + i * c + 1)}" width="${c - 2}" height="${c - 2}" fill="${o.fill(i, j)}"/>`;
+      const it = ga.raw(m, { at: o.at, anim: "fade", t: 0.4 });
+      anchors(it, box(o.x, o.y, o.x + o.cols * c, o.y + o.rows * c));
+      Object.assign(it, { kind: "rect", lint: o.lint !== false, face: it.box });
+      return it;
+    };
+
+    // ---- panel: one block opened, its parts drawn inside; wash, 10 px radius, its
+    // name under it. Not a solid for the lint, so wires may run inside it.
+    S.panel = (o) => {
+      const it = ga.raw(`<rect x="${o.x}" y="${o.y}" width="${o.w}" height="${o.h}" rx="10" fill="var(--wash)"/>`, { at: o.at, anim: "fade", t: 0.5 });
+      anchors(it, box(o.x, o.y, o.x + o.w, o.y + o.h));
+      it.face = it.box;
+      if (o.label) it.label = ga.text(o.label, { x: o.x + o.w / 2, y: o.y + o.h + 6, anchor: "middle", role: "label", size: LABEL, color: "var(--ink-2)", at: o.at });
+      return it;
     };
 
     return S;

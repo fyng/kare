@@ -4,8 +4,8 @@ name: Architecture diagram
 kind: schematic
 family: schematic
 job: ["How a model is built: its modules and the path data take through them"]
-kit: [GA.schematic.block, GA.schematic.cells, GA.schematic.op, GA.schematic.wire, GA.schematic.flow, GA.schematic.bracket, GA.schematic.tracks]
-sources: ["Linder et al., Nature Genetics 2025, Fig. 1a", "Avsec et al., Nature 2026, Fig. 1a", "Lin et al., Science 2023, Fig. 2a"]
+kit: [GA.schematic.block, GA.schematic.cells, GA.schematic.op, GA.schematic.wire, GA.schematic.flow, GA.schematic.bracket, GA.schematic.tracks, GA.schematic.panel, GA.schematic.grid]
+sources: ["Linder et al., Nature Genetics 2025, Fig. 1a", "Avsec et al., Nature 2026, Fig. 1a", "Lin et al., Science 2023, Fig. 2a (a block opened)"]
 see_also: [form-28, form-29]
 ---
 # 27 · Architecture diagram
@@ -81,6 +81,70 @@ enc.forEach((e, i) => {
   S.wire([{ x: e.r + 6, y }, { x: M - 13, y }], { tone: "minor", to: o });
   S.wire([{ x: M + 13, y }, S.port(dec[i], "l")], { tone: "minor", from: o });
 });
+```
+
+## A block opened
+
+For a model whose repeated block is the point: the stages in a row on top, and one
+block opened beneath it, as a zoom.
+
+- **The stages in a row**, each a model block stacked to say "many", its count on
+  a bracket beneath ("48×"). Inputs that join (a language model's embedding and the
+  sequence itself) meet at an operator node. A loop over the stages (recycling) is a
+  1.5 px `ink-2` wire over the top, named once.
+- **The opened block is a panel**: `wash`, 10 px radius, its name under it in
+  `label`. Dotted leaders run from the stage it opens to the panel's top corners
+  (`../../illustration.md`, *Zoom*).
+- **Inside, one lane per representation**, each entering from the left in its own
+  shape (a grid for pairs, cells for the sequence) and leaving at the right. Sub-layers
+  are model blocks on their lane; what crosses between lanes is a 1.5 px wire.
+
+![Language-model embeddings and the sequence summed into a folding trunk of 48 blocks and a structure module of 8, with recycling over the top; one folding block opened into a pair lane and a sequence lane](out/27-architecture-diagram.a-block-opened.png)
+
+```js figure=a-block-opened w=700 h=424
+const S = GA.schematic(ga);
+// the stages
+const seq = S.block({ x: 24, y: 78, w: 88, h: 36, role: "data", label: "Sequence" });
+const lm = S.block({ x: 144, y: 70, w: 104, h: 52, label: "Language\nmodel", depth: 3 });
+const sum = S.op({ cx: 284, cy: 96, sym: "+" });
+const trunk = S.block({ x: 312, y: 70, w: 100, h: 52, label: "Folding\ntrunk", depth: 3 });
+const sm = S.block({ x: 452, y: 70, w: 100, h: 52, label: "Structure\nmodule", depth: 2 });
+const out = S.block({ x: 592, y: 78, w: 88, h: 36, role: "data", label: "Structure" });
+S.bracket({ x0: 312, x1: 412, y: 130, side: "bottom", label: "48×" });
+S.bracket({ x0: 452, x1: 552, y: 130, side: "bottom", label: "8×" });
+S.wire([S.port(seq, "r"), S.port(lm, "l")], { from: seq, to: lm });
+S.wire([{ x: lm.r + 6, y: 96 }, { x: 271, y: 96 }], { from: lm, to: sum });
+S.wire([{ x: 297, y: 96 }, S.port(trunk, "l")], { from: sum, to: trunk });
+S.wire([{ x: trunk.r + 6, y: 96 }, S.port(sm, "l")], { from: trunk, to: sm });
+S.wire([{ x: sm.r + 6, y: 96 }, S.port(out, "l")], { from: sm, to: out });
+S.wire([S.port(seq, "b"), { x: 68, y: 146 }, { x: 284, y: 146 }, { x: 284, y: 109 }], { tone: "minor", from: seq, to: sum });
+S.wire([S.port(out, "t"), { x: 636, y: 40 }, { x: 362, y: 40 }, { x: 362, y: trunk.t - 6 }], { tone: "minor", from: out, to: trunk });
+ga.text("Recycling", { x: 499, y: 18, role: "note", size: 13, anchor: "middle" });
+// one folding block, opened
+const P = S.panel({ x: 200, y: 200, w: 470, h: 184, label: "Folding block" });
+ga.raw(`<path d="M312 138L${P.l} ${P.t}M412 138L${P.r} ${P.t}" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="1 4" stroke-linecap="round"/>`);
+const pair = S.grid({ x: 110, y: 222, rows: 5, cols: 5, fill: (i, j) => tok(`blue-${[100, 200, 300][(i * 3 + j * 2) % 3]}`) });
+const res = S.cells({ x: 88, y: 330, n: 6, cell: 12, fill: (i) => tok(`blue-${[200, 300, 200, 400, 300, 200][i]}`) });
+ga.text("Pair", { x: 100, y: 239, anchor: "end", role: "label", size: 14, color: "var(--ink-2)" });
+ga.text("Sequence", { x: 78, y: 327, anchor: "end", role: "label", size: 14, color: "var(--ink-2)" });
+const prod = S.block({ x: 336, y: 229, w: 104, h: 36, label: "Outer product" });
+const tri = S.block({ x: 462, y: 225, w: 96, h: 44, label: "Triangle\nupdate" });
+const ptr = S.block({ x: 576, y: 229, w: 80, h: 36, label: "Transition" });
+const bias = S.block({ x: 232, y: 272, w: 70, h: 30, label: "Bias" });
+const att = S.block({ x: 222, y: 318, w: 90, h: 36, label: "Attention" });
+const str = S.block({ x: 343, y: 318, w: 90, h: 36, label: "Transition" });
+// the pair lane
+S.wire([S.port(pair, "r"), S.port(prod, "l")], { from: pair, to: prod });
+S.wire([S.port(prod, "r"), S.port(tri, "l")], { from: prod, to: tri });
+S.wire([S.port(tri, "r"), S.port(ptr, "l")], { from: tri, to: ptr });
+S.wire([S.port(ptr, "r"), { x: 686, y: 247 }], { from: ptr });
+// the sequence lane, biased by the pairs, feeding back into them
+S.wire([S.port(res, "r"), S.port(att, "l")], { from: res, to: att });
+S.wire([S.port(att, "r"), S.port(str, "l")], { from: att, to: str });
+S.wire([S.port(str, "r"), { x: 686, y: 336 }], { from: str });
+S.wire([{ x: 267, y: 253 }, S.port(bias, "t")], { tone: "minor", to: bias });
+S.wire([S.port(bias, "b"), S.port(att, "t", 45 / 90)], { tone: "minor", from: bias, to: att });
+S.wire([S.port(str, "t"), S.port(prod, "b", 52 / 104)], { tone: "minor", from: str, to: prod });
 ```
 
 ## In each format

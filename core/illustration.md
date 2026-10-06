@@ -96,6 +96,12 @@ The kit's `GA.schematic` layer (`../kit/ga-schematic.js`) draws each part below.
   **cells** with 2 px paper gaps; a record is **tracks** on a shared axis; a sequence
   is a line with its marks. The same object looks the same in every panel, so the
   data schematic's patch is the architecture's input.
+- **A block opened** is a panel: `wash`, 10 px radius, its name under it, dotted
+  zoom leaders from the block it opens. Inside, one lane per representation, each
+  entering in its own shape: cells for a sequence, a **grid** of cells for a pair
+  matrix (form 27, *A block opened*).
+- **Pairwise data under a track axis** are a contact map: the matrix turned 45°, on
+  the quantity ramp (form 29).
 - **Depth and repeats.** A stack of two or three copies, 5 px up and to the right,
   says "many" (channels, layers, runs). The count goes on a bracket ("8×"), never in
   more copies.
