@@ -223,6 +223,8 @@
     //     persist: { from, to, at } (a state that holds once found: a light bar from
     //     `from` to `to`, a dot at each time in `at`); density: counts per bin (a strip
     //     on the slate ramp, empty bins blank)
+    //   row.lanes: spans data is [[[a, b], …], …] and persist data [{ spans, at }, …],
+    //     one stacked lane each (overlapping treatments; sites that clear and return)
     //   pitch per row (default o.pitch); a row of pitch < 20 is compact: tick-size name.
     //   group: rows that share it are named once, left-aligned at o.groupX, beside them,
     //     in label 500; the rows inside it are named in tick.
@@ -243,7 +245,7 @@
       const bottom = acc;
       const X = (u) => f1(x0 + u * o.w);
       const base = (i) => tops[i] + ph(o.rows[i]) - (ph(o.rows[i]) < 20 ? 3 : 6);
-      const mid = (i) => base(i) - (ph(o.rows[i]) < 20 ? 4 : 6);
+      const mid = (i) => ph(o.rows[i]) < 20 ? base(i) - 4 : (tops[i] + base(i)) / 2; // centred between the row's top and its baseline
       let back = "", marks = "";
       if (o.stripes) for (let k = 1; k < P; k += 2) back += `<rect x="${X(k / P)}" y="${top - 4}" width="${f1(o.w / P)}" height="${bottom - top + 4}" fill="var(--wash)"/>`;
       if (o.patches && o.dividers !== false) for (let k = 1; k < P; k++) back += `<path d="M${X(k / P)} ${top - 4}V${bottom}" stroke="var(--rule)" stroke-width="1.5" stroke-dasharray="3 3"/>`;
@@ -253,6 +255,11 @@
         if (row.kind === "events") for (const u of row.data) marks += `<circle cx="${X(u)}" cy="${cy}" r="${compact ? 2.8 : 3.5}" fill="${col}"/>`;
         else if (row.kind === "squares") for (const u of row.data) marks += `<rect x="${f1(+X(u) - 3)}" y="${f1(cy - 3)}" width="6" height="6" fill="${col}"/>`;
         else if (row.kind === "binary") for (const [u, v] of row.data) marks += GA.glyph("circle", +X(u), cy, v ? { size: 8, fill: col } : { size: 7, fill: "var(--paper)", ring: col, ringW: 1.5 });
+        else if (row.kind === "persist" && row.lanes) row.data.forEach((lane, k) => {
+          const ly = cy + (k - (row.data.length - 1) / 2) * 7;
+          for (const [a, b] of lane.spans) marks += `<rect x="${X(a)}" y="${f1(ly - 1.5)}" width="${f1((b - a) * o.w)}" height="3" fill="${row.light || col}"/>`;
+          for (const u of lane.at) marks += `<circle cx="${X(u)}" cy="${f1(ly)}" r="2.4" fill="${col}"/>`;
+        });
         else if (row.kind === "persist") {
           const { from, to, at = [] } = row.data;
           marks += `<rect x="${X(from)}" y="${f1(cy - 2)}" width="${f1((to - from) * o.w)}" height="4" fill="${row.light || col}"/>` + at.map((u) => `<circle cx="${X(u)}" cy="${cy}" r="2.8" fill="${col}"/>`).join("");
@@ -273,8 +280,9 @@
           back += `<rect x="${x0}" y="${f1(cy - hh / 2)}" width="${o.w}" height="${hh}" fill="var(--paper)" stroke="var(--rule)" stroke-width="1"/>`;
           row.data.forEach((c, j) => { if (c > 0) marks += `<rect x="${f1(x0 + j * bw)}" y="${f1(cy - hh / 2)}" width="${f1(bw + 0.3)}" height="${hh}" fill="var(--slate-${100 * Math.min(7, 2 + Math.round((c / mx) * 5))})"/>`; });
         }
-        else if (row.kind === "ticks") for (const u of row.data) marks += `<path d="M${X(u)} ${y - 12}V${y - 1}" stroke="${col}" stroke-width="2"/>`;
-        else if (row.kind === "spans") for (const [a, b] of row.data) marks += `<rect x="${X(a)}" y="${compact ? f1(cy - 2.5) : y - 10}" width="${f1((b - a) * o.w)}" height="${compact ? 5 : 7}" fill="${col}"/>`;
+        else if (row.kind === "ticks") for (const u of row.data) marks += `<path d="M${X(u)} ${f1(cy - 6)}V${f1(cy + 6)}" stroke="${col}" stroke-width="2"/>`;
+        else if (row.kind === "spans" && row.lanes) row.data.forEach((lane, k) => { const ly = cy + (k - (row.data.length - 1) / 2) * 7; for (const [a, b] of lane) marks += `<rect x="${X(a)}" y="${f1(ly - 2.5)}" width="${f1((b - a) * o.w)}" height="5" fill="${col}"/>`; });
+        else if (row.kind === "spans") for (const [a, b] of row.data) marks += `<rect x="${X(a)}" y="${compact ? f1(cy - 2.5) : f1(cy - 3.5)}" width="${f1((b - a) * o.w)}" height="${compact ? 5 : 7}" fill="${col}"/>`;
         else if (row.kind === "signal") {
           const step = o.w / (row.data.length - 1);
           marks += `<path d="M${x0} ${y}${row.data.map((v, j) => `L${f1(x0 + j * step)} ${f1(y - v * H)}`).join("")}L${x1} ${y}Z" fill="${col}"/>`;

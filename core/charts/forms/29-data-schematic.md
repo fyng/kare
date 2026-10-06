@@ -85,78 +85,84 @@ ga.text("948", { x: T.colX({ dx: 100 }), y: ty + 6, anchor: "end", role: "tick",
 ## Records over time
 
 For records that arrive as events over time (a patient's labs, treatments, findings):
-a group of rows per kind of record on one axis from diagnosis, a row per measurement
-or category drawn as its data type, and the end of the record marked across every
-row, so the reader sees how irregular, sparse and mixed the record is.
+a row per kind of record on one axis from diagnosis, each drawn as its data type,
+the rows grouped by data type and the end of the record marked across every row,
+so the reader sees how irregular, sparse and mixed the record is.
 
-- **Rows are grouped by kind of record**, the kind named once at the left in `label`
-  at 500, and each row named beside the axis in `tick`. A categorical kind takes
-  one compact 16 px row per category, so it reads as categories, not as one track.
+- **One row per kind of record**, named at the left in `label`, rows of a data type
+  together with a small gap between types. A right bracket names each data type
+  once: continuous, ordinal, multi-category, binary.
+- **Colour is the data type**, identity slots in order (`../../color.md`); every
+  row of a type takes its colour.
 - **Each kind keeps its own shape and sampling.** Labs are measured values at
   irregular times, dense around diagnosis and each new line of therapy, joined only
-  across short gaps so missing time stays empty; some stop being measured. Each
-  value row spans its own range; there is no value axis. An ordinal score snaps to
-  its levels and steps between them. Treatments are intervals, one row per drug
-  class, overlapping when given together. A genomic finding is a square at its
-  test. A tumour site holds once found: a light bar from the first finding to the
-  end of the record, a dot at each mention. A binary assessment is a hollow circle
-  for no and a filled one for yes.
-- **Colour is the kind of record**, identity slots in order (`../../color.md`).
+  across short gaps so missing time stays empty; there is no value axis. An ordinal
+  score snaps to its levels and steps between them. Treatments are intervals in
+  stacked lanes (`lanes`), overlapping when given together. A mutation is a tick at
+  its test. Tumour sites are one lane each: a light bar while the site is present, a
+  dot at each mention, so a site can clear on treatment and come back after
+  progression. A binary assessment is a hollow circle for no and a filled one for yes.
+- **Marks sit centred** between the row's top and its baseline.
 - **What holds for the whole record is an annotation, not a track**: demographics
-  at diagnosis are a short mark and a `tick` note at the start of the axis.
+  at diagnosis are a short mark and a `tick` note at the start of the axis, on the
+  line of the end mark.
 - **The end of the record is a vertical line through every row**: solid with an x
   for death, dotted with a hollow circle for censoring (*Glyphs*); the axis beyond it
   stays empty.
-- **Records per patch** is one strip under the rows, the 10-day patches the model
-  reads on the `slate` ramp, empty patches blank, with no key: darker is more.
-- **The table** gives each kind its records and its data type in a `slate-100`
-  pill: continuous, ordinal, categorical, multi-category, binary.
+- **Records per patch** is one strip under the rows on the `slate` ramp, empty
+  patches blank, with no key: darker is more.
+- **The table** gives each row its records and the share of patients with any;
+  the records' total sits under a hairline below the last counted row.
 
-![A synthetic patient's record over ten years: three labs and a performance score sampled irregularly, treatments, genomic findings and tumour sites as one row per category, binary progression assessments, the record ending in death; records per 10-day patch as one strip; a table of records and data types](out/29-data-schematic.records-over-time.png)
+![A synthetic patient's record over ten years: two labs and a performance score sampled irregularly, treatments in two lanes, mutations, three tumour sites that clear and return, binary progression assessments, the record ending in death; records per 10-day patch as one strip; records and patients per row, bracketed by data type](out/29-data-schematic.records-over-time.png)
 
-```js figure=records-over-time w=722 h=480
+```js figure=records-over-time w=700 h=310
 const S = GA.schematic(ga);
-const X = 210, W = 330, rnd = GA.rng(17), END = 0.86;
-// --- a synthetic record (no patient data); times are fractions of ten years
-const times = (segs) => segs.flatMap(([a, b, st]) => { const t = []; for (let u = a + st * rnd(); u < b; u += st * (0.6 + 0.8 * rnd())) t.push(u); return t; });
-const onTx = (u) => (u > 0.02 && u < 0.18) || (u > 0.55 && u < 0.72);
-const clip = (v) => Math.max(0, Math.min(1, v));
-const hgbT = times([[0, 0.06, 0.004], [0.06, 0.5, 0.024], [0.5, 0.62, 0.006], [0.62, END, 0.02]]);
-const hgb = hgbT.map((u) => [u, clip(0.7 - (onTx(u) ? 0.35 : 0) - (u > 0.74 ? 0.35 * (u - 0.74) / 0.12 : 0) + 0.3 * (rnd() - 0.5))]);
-const cre = hgbT.filter((_, i) => i % 2 === 0).map((u) => [u, clip(0.15 + 0.6 * u + (onTx(u) ? 0.2 : 0) + 0.25 * (rnd() - 0.5))]);
-const cea = times([[0, 0.05, 0.008], [0.05, 0.42, 0.035]]).map((u) => [u, clip((u < 0.2 ? 0.95 - 3.5 * u : 0.25 + 2.5 * (u - 0.2)) + 0.15 * (rnd() - 0.5))]);
-const ecog = [[0.03, 1], [0.1, 1], [0.25, 0], [0.5, 1], [0.56, 2], [0.7, 1], [0.78, 2], [0.84, 3]];
-const tx = { Chemotherapy: [[0.02, 0.18], [0.55, 0.72]], Immunotherapy: [[0.02, 0.42], [0.55, 0.64]], Targeted: [[0.76, 0.84]] };
-const gen = { KRAS: [0.012], TP53: [0.012, 0.53], STK11: [0.012], KEAP1: [0.53] };
-const sites = { Lung: { from: 0, to: END, at: [0, 0.06, 0.3] }, Liver: { from: 0.5, to: END, at: [0.5, 0.56, 0.62, 0.7, 0.84] }, Bone: { from: 0.75, to: END, at: [0.75, 0.8] } };
-const prog = [[0.1, 0], [0.2, 0], [0.3, 0], [0.4, 0], [0.48, 1], [0.6, 0], [0.68, 0], [0.74, 1], [0.82, 0]];
-// records per 10-day patch, over every row above
-const NP = 365, all = [...hgb, ...cre, ...cea, ...ecog, ...prog].map(([u]) => u).concat(Object.values(gen).flat(), Object.values(sites).flatMap((x) => x.at));
-const density = Array.from({ length: NP }, (_, j) => {
-  const lo = j / NP, hi = (j + 1) / NP;
-  return all.filter((u) => u >= lo && u < hi).length + Object.values(tx).flat().filter(([a, b]) => a < hi && b > lo).length;
-});
-const c = (k) => `var(--cat-${k})`, G = 8;
-const rows = [
-  { group: "Labs", name: "Haemoglobin", kind: "values", color: c(1), data: hgb, pitch: 24 },
-  { group: "Labs", name: "Creatinine", kind: "values", color: c(1), data: cre, pitch: 24 },
-  { group: "Labs", name: "CEA", kind: "values", color: c(1), data: cea, pitch: 24, gapAfter: G },
-  { group: "Performance", name: "ECOG", kind: "values", levels: 4, gap: 0.2, color: c(2), data: ecog, pitch: 24, gapAfter: G },
-  ...Object.entries(tx).map(([k, d], i, a) => ({ group: "Treatments", name: k, kind: "spans", color: c(3), data: d, pitch: 16, gapAfter: i === a.length - 1 ? G : 0 })),
-  ...Object.entries(gen).map(([k, d], i, a) => ({ group: "Genomics", name: k, kind: "squares", color: c(4), data: d, pitch: 16, gapAfter: i === a.length - 1 ? G : 0 })),
-  ...Object.entries(sites).map(([k, d], i, a) => ({ group: "Tumour sites", name: k, kind: "persist", color: c(5), light: tok("violet-200"), data: d, pitch: 16, gapAfter: i === a.length - 1 ? G : 0 })),
-  { group: "Progression", kind: "binary", color: c(6), data: prog, pitch: 24, gapAfter: 16 },
-  { name: "Records per patch", kind: "density", data: density, pitch: 20 },
+const X = 140, W = 306, END = 0.82, P = 10, top = 72, G = 6, rnd = GA.rng(7);
+// synthetic labs: dense near diagnosis and each new line of therapy
+const t = (segs) => segs.flatMap(([a, b, st]) => { const r = []; for (let u = a + st * rnd(); u < b; u += st * (0.6 + 0.8 * rnd())) r.push(u); return r; });
+const lt = t([[0, 0.06, 0.006], [0.06, 0.48, 0.03], [0.48, 0.56, 0.008], [0.56, END, 0.025]]);
+const hgb = lt.map((u) => [u, 0.5 + 0.35 * Math.sin(u * 9) + 0.15 * rnd()]);
+const cre = lt.filter((_, i) => i % 2).map((u) => [u, 0.2 + 0.7 * u + 0.15 * rnd()]);
+const ecog = [[0.02, 1], [0.15, 0], [0.35, 0], [0.5, 1], [0.62, 2], [0.78, 3]];
+const tx = [[0.03, 0.18], [0.5, 0.62], [0.67, 0.79]], mut = [0.02, 0.5];
+const tx2 = [tx, [[0.03, 0.3], [0.5, 0.58]]];
+// three sites: two clear on treatment and come back after progression
+const sites = [
+  { spans: [[0.02, 0.52], [0.7, END]], at: [0.02, 0.3, 0.7] },
+  { spans: [[0.3, 0.56], [0.72, END]], at: [0.3, 0.45, 0.72] },
+  { spans: [[0.46, END]], at: [0.46, 0.6, 0.76] },
 ];
-const top = 96;
-S.bracket({ x0: X, x1: X + W, y: top - 50, side: "top", label: "Up to 10 years from diagnosis" });
-// demographics: an annotation at the start of the axis, not a track
-ga.raw(`<path d="M${X} ${top - 26}V${top - 4}" stroke="var(--ink-2)" stroke-width="1.5"/>`);
-ga.text("At diagnosis: age, sex, cancer type", { x: X + 6, y: top - 29, role: "tick", size: 12, color: "var(--muted)" });
-S.tracks({ x: X, y: top, w: W, groupX: 16, groupCols: true, rows, end: { u: END, kind: "death", label: "death" }, cols: [
-  { title: "Records", dx: 50, values: ["8.1M", "0.3M", "0.5M", "0.8M", "1.6M", "0.2M", null] },
-  { title: "Type", dx: 166, w: 100, values: ["continuous", "ordinal", "multi-category", "multi-category", "multi-category", "binary", null], pill: () => tok("slate-100") },
+const site = { at: sites.flatMap((l) => l.at) };
+const prog = [[0.15, 0], [0.3, 0], [0.45, 1], [0.58, 0], [0.7, 1]];
+const NP = 120, all = [...hgb, ...cre, ...ecog, ...prog].map((d) => d[0]).concat(mut, site.at);
+const density = Array.from({ length: NP }, (_, j) => { const lo = j / NP, hi = (j + 1) / NP; return all.filter((u) => u >= lo && u < hi).length + tx.filter(([a, b]) => a < hi && b > lo).length; });
+const rows = [
+  { name: "Haemoglobin", color: "var(--cat-1)", kind: "values", gap: 0.05, data: hgb },
+  { name: "Creatinine", color: "var(--cat-1)", kind: "values", gap: 0.08, gapAfter: G, data: cre },
+  { name: "ECOG", color: "var(--cat-2)", kind: "values", levels: 4, gap: 0.2, gapAfter: G, data: ecog },
+  { name: "Treatments", color: "var(--cat-3)", kind: "spans", lanes: true, pitch: 26, data: tx2 },
+  { name: "Mutations", color: "var(--cat-3)", kind: "ticks", data: mut },
+  { name: "Tumour sites", color: "var(--cat-3)", kind: "persist", lanes: true, pitch: 30, light: tok("teal-200"), gapAfter: G, data: sites },
+  { name: "Progression", color: "var(--cat-4)", kind: "binary", gapAfter: G + 4, data: prog },
+  { name: "Records per patch", kind: "density", pitch: 20, data: density },
+];
+S.bracket({ x0: X, x1: X + W, y: 40, side: "top", label: "Up to 10 years from diagnosis" });
+const T = S.tracks({ x: X, y: top, w: W, pitch: 22, patches: P, rows, end: { u: END, kind: "death", label: "death" }, cols: [
+  { title: "Records", dx: 54, values: ["5.2M", "2.9M", "0.3M", "0.5M", "0.8M", "1.6M", "0.2M", null] },
+  { title: "Patients", dx: 112, values: ["97%", "95%", "62%", "88%", "71%", "90%", "58%", null] },
 ] });
+// one bracket per data type
+const types = [["continuous", 0, 1], ["ordinal", 2, 2], ["multi-category", 3, 5], ["binary", 6, 6]];
+const bx = T.colX({ dx: 126 });
+for (const [name, a, b] of types) S.bracket({ x: bx, y0: T.rowY(a) - 15, y1: T.rowY(b) + 1, side: "right", label: name, size: 13 });
+// the total right under the last counted row
+const ty = T.rowY(6) + 4;
+ga.raw(`<path d="M${T.colX({ dx: 12 })} ${ty}H${T.colX({ dx: 54 })}" stroke="var(--rule)" stroke-width="1.5"/>`);
+ga.text("11.5M", { x: T.colX({ dx: 54 }), y: ty + 5, anchor: "end", role: "tick", size: 12, color: "var(--ink)" });
+// what holds for the whole record, on the line of the end mark
+ga.raw(`<path d="M${X} ${top - 22}V${top - 4}" stroke="var(--ink-2)" stroke-width="1.5"/>`);
+ga.text("Diagnosis: age, sex, cancer type", { x: X + 6, y: top - 21, role: "tick", size: 12, color: "var(--muted)" });
 ```
 
 ## In each format
