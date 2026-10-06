@@ -230,6 +230,7 @@ are in that form's file, `../../core/charts/forms/`, under *In each format*.
 | Summary bar | 3 px | 1 pt, with a 0.5 pt paper halo |
 | Paper gap (segments, cells) | 2 px | 0.5 pt |
 | Glyph (event, sample, tree node) | 11 px; 13–16 px with a digit or letter | 2.5 mm; 3 mm with a digit or letter (5 pt, 500) |
+| Schematic block, wire (forms 27–29) | 1.5 px outline, 6 px radius; wires 2.5 px main, 1.5 px side | 0.5 pt, 0.6 mm radius; 1 pt main, 0.5 pt side |
 
 Strokes stay between 0.5 and 1 pt, which every journal accepts (Nature 0.25–1 pt,
 Science from 0.5 pt, Cell Press 0.5–1.5 pt).

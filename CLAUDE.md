@@ -20,6 +20,7 @@ it is always current; start there when you do not know where something lives.
 | Chart forms of one kind | `grep -l "family: anatomy" core/charts/forms/*`; the family's contact sheet, `core/charts/out/sheet-anatomy.png` |
 | The form for a job | `grep -l "job:.*anatomical site" core/charts/forms/*` |
 | Cells, tissue, body maps, arrows, method boxes | `core/illustration.md` |
+| A method schematic: architecture, procedure, data | `core/illustration.md`, *Schematics*; forms 27–29 |
 | Icons | `core/icons.md`; code in `kit/icons.js` |
 | Drawing a figure in HTML; the kit API and renderer | `kit/README.md` |
 | A website | `formats/web/README.md` |
