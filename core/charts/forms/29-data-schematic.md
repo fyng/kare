@@ -84,9 +84,10 @@ ga.text("948", { x: T.colX({ dx: 100 }), y: ty + 6, anchor: "end", role: "tick",
 
 ## Records over time
 
-For a patient's record from diagnosis on: the same layout as the genomic tracks,
-with the complexities that make clinical time series hard to model drawn in, not
-smoothed away. Drawn from synthetic data.
+For records that arrive as events over time (a patient's labs, treatments, findings):
+a group of rows per kind of record on one axis from diagnosis, a row per measurement
+or category drawn as its data type, and the end of the record marked across every
+row, so the reader sees how irregular, sparse and mixed the record is.
 
 - **Rows are grouped by kind of record**, the kind named once at the left in `label`
   at 500, and each row named beside the axis in `tick`. A categorical kind takes
