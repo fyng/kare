@@ -4,7 +4,7 @@ name: Data schematic
 kind: schematic
 family: schematic
 job: ["What data a method takes in: their kinds, extent, counts and the unit it reads"]
-kit: [GA.schematic.tracks, GA.schematic.contact, GA.schematic.bracket, GA.schematic.wire, GA.schematic.cells]
+kit: [GA.schematic.tracks, GA.schematic.contact, GA.schematic.bracket, GA.schematic.wire]
 sources: ["Avsec et al., Nature 2026, Fig. 1a", "Linder et al., Nature Genetics 2025, Fig. 1a"]
 see_also: [form-27, form-28, form-17]
 ---
@@ -84,93 +84,78 @@ ga.text("948", { x: T.colX({ dx: 100 }), y: ty + 6, anchor: "end", role: "tick",
 
 ## Records over time
 
-For a patient's record from diagnosis on: the same layout as the genomic tracks, with
-the complexities that make clinical time series hard to model drawn in, not smoothed
-away. Drawn from synthetic data.
+For a patient's record from diagnosis on: the same layout as the genomic tracks,
+with the complexities that make clinical time series hard to model drawn in, not
+smoothed away. Drawn from synthetic data.
 
-- **Each kind of record keeps its own shape and sampling.** Labs are measured values
-  at irregular times: dense around diagnosis and each new line of therapy, sparse
-  between, joined only across short gaps so missing time stays empty, and some stop
-  being measured. Each value row spans its own range; there is no value axis.
-  Treatments are concurrent intervals in lanes, one per drug, in steps of the
-  treatment hue. Genomic findings come several at a time, stacked at the test. Sites
-  recur in lanes, one per site. Demographics are one value at entry.
-- **Colour is the kind of record**, identity slots in order (`../../color.md`);
-  shades within a kind tell its items apart.
-- **The record ends** on a follow-up line, `ink-2` from the first record to the
-  last contact, closed by an x for death or a tick for censoring (*Glyphs*); the
-  axis beyond it is empty.
-- **The table** gives each kind the share of patients who have it, its records,
-  and what one value is, in a `slate-100` pill ("binned", "370 drugs").
-- **The unit the model reads opens beneath**: two years in wash, a busy one and a
-  quiet one, each as a row of its 10-day patches, cells on a neutral ramp (`slate`)
-  by the number of records in each and an empty patch as paper in a `rule`
-  outline, so the reader sees how unevenly the record fills its patches.
+- **Rows are grouped by kind of record**, the kind named once at the left in `label`
+  at 500, and each row named beside the axis in `tick`. A categorical kind takes
+  one compact 16 px row per category, so it reads as categories, not as one track.
+- **Each kind keeps its own shape and sampling.** Labs are measured values at
+  irregular times, dense around diagnosis and each new line of therapy, joined only
+  across short gaps so missing time stays empty; some stop being measured. Each
+  value row spans its own range; there is no value axis. An ordinal score snaps to
+  its levels and steps between them. Treatments are intervals, one row per drug
+  class, overlapping when given together. A genomic finding is a square at its
+  test. A tumour site holds once found: a light bar from the first finding to the
+  end of the record, a dot at each mention. A binary assessment is a hollow circle
+  for no and a filled one for yes.
+- **Colour is the kind of record**, identity slots in order (`../../color.md`).
+- **What holds for the whole record is an annotation, not a track**: demographics
+  at diagnosis are a short mark and a `tick` note at the start of the axis.
+- **The end of the record is a vertical line through every row**: solid with an x
+  for death, dotted with a hollow circle for censoring (*Glyphs*); the axis beyond it
+  stays empty.
+- **Records per patch** is one strip under the rows, the 10-day patches the model
+  reads on the `slate` ramp, empty patches blank, with no key: darker is more.
+- **The table** gives each kind its records and its data type in a `slate-100`
+  pill: continuous, ordinal, categorical, multi-category, binary.
 
-![A synthetic patient's record over ten years: three labs sampled irregularly, concurrent treatments in lanes, stacked genomic findings, recurring sites, progression and death; a table of coverage, records and value types; years 1 and 5 opened into 36 ten-day patches each, shaded by records per patch](out/29-data-schematic.records-over-time.png)
+![A synthetic patient's record over ten years: three labs and a performance score sampled irregularly, treatments, genomic findings and tumour sites as one row per category, binary progression assessments, the record ending in death; records per 10-day patch as one strip; a table of records and data types](out/29-data-schematic.records-over-time.png)
 
-```js figure=records-over-time w=700 h=440
+```js figure=records-over-time w=722 h=480
 const S = GA.schematic(ga);
-const X = 140, W = 360, rnd = GA.rng(17);
-// --- synthetic record (no patient data): times are fractions of ten years
+const X = 210, W = 330, rnd = GA.rng(17), END = 0.86;
+// --- a synthetic record (no patient data); times are fractions of ten years
 const times = (segs) => segs.flatMap(([a, b, st]) => { const t = []; for (let u = a + st * rnd(); u < b; u += st * (0.6 + 0.8 * rnd())) t.push(u); return t; });
 const onTx = (u) => (u > 0.02 && u < 0.18) || (u > 0.55 && u < 0.72);
-const hgbT = times([[0, 0.06, 0.004], [0.06, 0.5, 0.024], [0.5, 0.62, 0.006], [0.62, 0.86, 0.02]]);
 const clip = (v) => Math.max(0, Math.min(1, v));
+const hgbT = times([[0, 0.06, 0.004], [0.06, 0.5, 0.024], [0.5, 0.62, 0.006], [0.62, END, 0.02]]);
 const hgb = hgbT.map((u) => [u, clip(0.7 - (onTx(u) ? 0.35 : 0) - (u > 0.74 ? 0.35 * (u - 0.74) / 0.12 : 0) + 0.3 * (rnd() - 0.5))]);
 const cre = hgbT.filter((_, i) => i % 2 === 0).map((u) => [u, clip(0.15 + 0.6 * u + (onTx(u) ? 0.2 : 0) + 0.25 * (rnd() - 0.5))]);
 const cea = times([[0, 0.05, 0.008], [0.05, 0.42, 0.035]]).map((u) => [u, clip((u < 0.2 ? 0.95 - 3.5 * u : 0.25 + 2.5 * (u - 0.2)) + 0.15 * (rnd() - 0.5))]);
-const tc = (k) => tok(`teal-${k}`);
-const tx = [[0.02, 0.18, 0, tc(500)], [0.02, 0.18, 1, tc(700)], [0.18, 0.42, 0, tc(300)], [0.55, 0.72, 0, tc(500)], [0.55, 0.64, 1, tc(700)], [0.6, 0.605, 2, tc(300)], [0.76, 0.84, 0, tc(700)]];
-const gen = [[0.012, 4], [0.53, 2]];
-const sites = [[0, 0], [0.06, 0], [0.3, 0], [0.5, 1], [0.56, 1], [0.62, 1], [0.7, 1], [0.75, 2], [0.8, 2], [0.84, 1]];
-const prog = [0.48, 0.74], end = 0.86;
-// --- two years opened beneath, in wash under the tracks: a busy one and a quiet one
-const Y0 = 94, pitch = 26, rowsN = 9, bottom = Y0 + rowsN * pitch, YEARS = [0, 4];
-for (const yr of YEARS) {
-  ga.raw(`<rect x="${X + (yr * W) / 10}" y="${Y0 - 4}" width="${W / 10}" height="${bottom - Y0 + 4}" fill="var(--wash)"/>`);
-  ga.text(`Year ${yr + 1}`, { x: X + ((yr + 0.5) * W) / 10, y: Y0 - 22, anchor: "middle", role: "tick", size: 12, color: "var(--muted)" });
-}
-S.bracket({ x0: X, x1: X + W, y: 44, side: "top", label: "Up to 10 years from diagnosis" });
-const T = S.tracks({ x: X, y: Y0, w: W, pitch, rows: [
-  { name: "Demographics", kind: "spans", color: "var(--ink-2)", data: [[0, 0.012]] },
-  { name: "Haemoglobin", kind: "values", color: "var(--cat-1)", data: hgb },
-  { name: "Creatinine", kind: "values", color: "var(--cat-1)", data: cre },
-  { name: "CEA", kind: "values", color: "var(--cat-1)", data: cea },
-  { name: "Genomics", kind: "stacks", color: "var(--cat-2)", data: gen },
-  { name: "Treatments", kind: "lanes", color: "var(--cat-3)", data: tx },
-  { name: "Tumour sites", kind: "events", lanes: 3, color: "var(--cat-4)", data: sites },
-  { name: "Progression", kind: "events", color: "var(--cat-5)", data: prog },
-  { name: "Follow-up", kind: "follow", data: { from: 0, to: end, end: "death" } },
-], cols: [
-  { title: "Patients", dx: 48, values: ["100%", "93%", "93%", "40%", "90%", "78%", "96%", "62%", "100%"] },
-  { title: "Records", dx: 100, values: ["4", "3.0M", "2.8M", "0.4M", "0.8M", "0.5M", "1.6M", "0.2M", "–"] },
-  { title: "One value", dx: 180, w: 70, values: ["static", "binned", "binned", "binned", "734 genes", "370 drugs", "11 sites", "event", "outcome"], pill: () => tok("slate-100") },
-] });
-// --- each opened year in 10-day patches, shaded by records per patch
-const P = 36, cell = W / P;
-// an empty patch is paper in a rule outline; a filled one a step of the slate ramp
-const shade = (n) => tok(`slate-${[200, 300, 400, 500, 600, 700][Math.min(5, n - 1)]}`);
-const patch = (x, y, s, n) => n ? `<rect x="${x + 1}" y="${y + 1}" width="${s - 2}" height="${s - 2}" fill="${shade(n)}"/>`
-  : `<rect x="${x + 1.5}" y="${y + 1.5}" width="${s - 3}" height="${s - 3}" fill="var(--paper)" stroke="var(--rule)" stroke-width="1"/>`;
-let py = bottom + 30;
-for (const yr of YEARS) {
-  const lo = (j) => yr / 10 + (j / P) * 0.1, hi = (j) => lo(j + 1), inP = (u, j) => u >= lo(j) && u < hi(j);
-  const count = (j) => [...hgb, ...cre, ...cea].filter(([u]) => inP(u, j)).length + gen.filter(([u]) => inP(u, j)).reduce((n, [, k]) => n + k, 0)
-    + sites.filter(([u]) => inP(u, j)).length + prog.filter((u) => inP(u, j)).length + tx.filter(([a, b]) => a < hi(j) && b > lo(j)).length + (yr === 0 && j === 0 ? 1 : 0);
-  ga.raw(Array.from({ length: P }, (_, j) => patch(X + j * cell, py, cell, count(j))).join(""));
-  ga.text(`Year ${yr + 1}`, { x: X - 10, y: py - 2, anchor: "end", role: "label", size: 14, color: "var(--ink-2)" });
-  py += cell + 12;
-}
-ga.text("10-day patches", { x: X + W + 10, y: bottom + 30 + cell / 2 + 3, role: "tick", size: 12, color: "var(--muted)" });
-// key: records per patch
-const ky = py + 4;
-ga.text("Records per patch", { x: X, y: ky, role: "tick", size: 12, color: "var(--muted)" });
-["0", "1", "2", "3", "4", "5", "6+"].forEach((t, k) => {
-  const kx = X + 112 + k * 30;
-  ga.raw(patch(kx - 1, ky, 14, k));
-  ga.text(t, { x: kx + 16, y: ky, role: "tick", size: 12, color: "var(--ink-2)" });
+const ecog = [[0.03, 1], [0.1, 1], [0.25, 0], [0.5, 1], [0.56, 2], [0.7, 1], [0.78, 2], [0.84, 3]];
+const tx = { Chemotherapy: [[0.02, 0.18], [0.55, 0.72]], Immunotherapy: [[0.02, 0.42], [0.55, 0.64]], Targeted: [[0.76, 0.84]] };
+const gen = { KRAS: [0.012], TP53: [0.012, 0.53], STK11: [0.012], KEAP1: [0.53] };
+const sites = { Lung: { from: 0, to: END, at: [0, 0.06, 0.3] }, Liver: { from: 0.5, to: END, at: [0.5, 0.56, 0.62, 0.7, 0.84] }, Bone: { from: 0.75, to: END, at: [0.75, 0.8] } };
+const prog = [[0.1, 0], [0.2, 0], [0.3, 0], [0.4, 0], [0.48, 1], [0.6, 0], [0.68, 0], [0.74, 1], [0.82, 0]];
+// records per 10-day patch, over every row above
+const NP = 365, all = [...hgb, ...cre, ...cea, ...ecog, ...prog].map(([u]) => u).concat(Object.values(gen).flat(), Object.values(sites).flatMap((x) => x.at));
+const density = Array.from({ length: NP }, (_, j) => {
+  const lo = j / NP, hi = (j + 1) / NP;
+  return all.filter((u) => u >= lo && u < hi).length + Object.values(tx).flat().filter(([a, b]) => a < hi && b > lo).length;
 });
+const c = (k) => `var(--cat-${k})`, G = 8;
+const rows = [
+  { group: "Labs", name: "Haemoglobin", kind: "values", color: c(1), data: hgb, pitch: 24 },
+  { group: "Labs", name: "Creatinine", kind: "values", color: c(1), data: cre, pitch: 24 },
+  { group: "Labs", name: "CEA", kind: "values", color: c(1), data: cea, pitch: 24, gapAfter: G },
+  { group: "Performance", name: "ECOG", kind: "values", levels: 4, gap: 0.2, color: c(2), data: ecog, pitch: 24, gapAfter: G },
+  ...Object.entries(tx).map(([k, d], i, a) => ({ group: "Treatments", name: k, kind: "spans", color: c(3), data: d, pitch: 16, gapAfter: i === a.length - 1 ? G : 0 })),
+  ...Object.entries(gen).map(([k, d], i, a) => ({ group: "Genomics", name: k, kind: "squares", color: c(4), data: d, pitch: 16, gapAfter: i === a.length - 1 ? G : 0 })),
+  ...Object.entries(sites).map(([k, d], i, a) => ({ group: "Tumour sites", name: k, kind: "persist", color: c(5), light: tok("violet-200"), data: d, pitch: 16, gapAfter: i === a.length - 1 ? G : 0 })),
+  { group: "Progression", kind: "binary", color: c(6), data: prog, pitch: 24, gapAfter: 16 },
+  { name: "Records per patch", kind: "density", data: density, pitch: 20 },
+];
+const top = 96;
+S.bracket({ x0: X, x1: X + W, y: top - 50, side: "top", label: "Up to 10 years from diagnosis" });
+// demographics: an annotation at the start of the axis, not a track
+ga.raw(`<path d="M${X} ${top - 26}V${top - 4}" stroke="var(--ink-2)" stroke-width="1.5"/>`);
+ga.text("At diagnosis: age, sex, cancer type", { x: X + 6, y: top - 29, role: "tick", size: 12, color: "var(--muted)" });
+S.tracks({ x: X, y: top, w: W, groupX: 16, groupCols: true, rows, end: { u: END, kind: "death", label: "death" }, cols: [
+  { title: "Records", dx: 50, values: ["8.1M", "0.3M", "0.5M", "0.8M", "1.6M", "0.2M", null] },
+  { title: "Type", dx: 166, w: 100, values: ["continuous", "ordinal", "multi-category", "multi-category", "multi-category", "binary", null], pill: () => tok("slate-100") },
+] });
 ```
 
 ## In each format
@@ -183,5 +168,6 @@ ga.text("Records per patch", { x: X, y: ky, role: "tick", size: 12, color: "var(
 | Coverage bar, profile | row pitch 26 px, peak 16 px | 3 mm pitch, peak 1.8 mm |
 | Contact cell | 12–13 px across | 1.2–1.5 mm |
 | Resolution or value pill | 18 px tall, 12 px text | 2 mm, 5–6 pt |
-| Lab value / lane | r 1.8 dot, 1 px join / 4 px lane, 6 px pitch | r 0.6 pt, 0.35 pt / 0.5 mm, 0.7 mm pitch |
+| Lab value; category row | r 1.8 dot, 1 px join; 16 px row, 12 px name | r 0.6 pt, 0.35 pt; 1.8 mm row, 5 pt name |
+| End of record | 1.5 px line, solid with an x (death) or dotted with a hollow circle (censored) | 0.5 pt |
 | Field cell | 16 px, 2 px paper gap | 1.6–2 mm, 0.5 pt gap |

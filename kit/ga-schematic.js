@@ -211,48 +211,70 @@
       return ga.text(`*${name}*`, { x: l - 6, y: B.cy - 0.5 * GA.ROLE.math.size - 2, anchor: "end", role: "math", color: col, at: o.at });
     };
 
-    // ---- tracks: one row per kind of record on a shared axis from x to x + w.
-    //   rows: [{ name, kind, data, color }], kind:
+    // ---- tracks: rows on a shared axis from x to x + w.
+    //   rows: [{ name, kind, data, color, pitch, group }], kind:
     //     events: positions 0..1 (dots); ticks: positions 0..1 (genomic marks);
-    //     spans: [[a, b], …] (intervals); signal: values 0..1 at even steps (a smooth
-    //     profile); peaks: values 0..1 per bin (coverage, as bars); arcs: [[a, b], …]
-    //     (junctions, contacts between two positions); values: [[u, v], …] (measurements,
-    //     joined across gaps ≤ row.gap); lanes: [[a, b, lane, colour?], …] (concurrent
-    //     intervals); stacks: [[u, n], …] (n findings at one time); events may take
-    //     [u, lane] with row.lanes; follow: { from, to, end: "death" | "censor" }
+    //     squares: positions 0..1 (a categorical finding at a test); spans: [[a, b], …]
+    //     (intervals); signal: values 0..1 at even steps (a smooth profile); peaks:
+    //     values 0..1 per bin (coverage, as bars); arcs: [[a, b], …] (links between two
+    //     positions); values: [[u, v], …] (measurements, joined across gaps ≤ row.gap;
+    //     row.levels snaps them to that many ordinal levels, joined as steps);
+    //     binary: [[u, 0 | 1], …] (an assessment: hollow for no, filled for yes);
+    //     persist: { from, to, at } (a state that holds once found: a light bar from
+    //     `from` to `to`, a dot at each time in `at`); density: counts per bin (a strip
+    //     on the slate ramp, empty bins blank)
+    //   pitch per row (default o.pitch); a row of pitch < 20 is compact: tick-size name.
+    //   group: rows that share it are named once, left-aligned at o.groupX, beside them,
+    //     in label 500; the rows inside it are named in tick.
     //   patches: n dashed dividers that cut the axis into n equal patches;
     //   stripes: every other patch in wash; dividers: false drops the dashed lines
-    //   cols: [{ title, values, dx, pill }]: a table at right, one value per row, its
-    //     right edge dx from the axis end; pill: (i) => fill sets each value in a pill
+    //   end: { u, kind: "death" | "censor", label }: the end of the record, a vertical
+    //     line through the rows, solid with an x for death, dotted with a hollow
+    //     circle for censoring
+    //   cols: [{ title, values, dx, pill, w }]: a table at right, one value per row (per
+    //     group with o.groupCols), right edge dx from the axis end; pill: (i) => fill
     // Returns { rowY(i): baseline, x0, x1, top, bottom, patchX(k), colX(c) }.
     S.tracks = (o) => {
-      const pitch = o.pitch || 26, n = o.rows.length, x0 = o.x, x1 = o.x + o.w, top = o.y, bottom = o.y + n * pitch;
-      const X = (u) => f1(x0 + u * o.w), base = (i) => top + (i + 1) * pitch - 6, P = o.patches || 1;
+      const n = o.rows.length, x0 = o.x, x1 = o.x + o.w, top = o.y, P = o.patches || 1;
+      const ph = (r) => r.pitch || o.pitch || 26;
+      const tops = [];
+      let acc = top;
+      for (const r of o.rows) { tops.push(acc); acc += ph(r) + (r.gapAfter || 0); }
+      const bottom = acc;
+      const X = (u) => f1(x0 + u * o.w);
+      const base = (i) => tops[i] + ph(o.rows[i]) - (ph(o.rows[i]) < 20 ? 3 : 6);
+      const mid = (i) => base(i) - (ph(o.rows[i]) < 20 ? 4 : 6);
       let back = "", marks = "";
       if (o.stripes) for (let k = 1; k < P; k += 2) back += `<rect x="${X(k / P)}" y="${top - 4}" width="${f1(o.w / P)}" height="${bottom - top + 4}" fill="var(--wash)"/>`;
       if (o.patches && o.dividers !== false) for (let k = 1; k < P; k++) back += `<path d="M${X(k / P)} ${top - 4}V${bottom}" stroke="var(--rule)" stroke-width="1.5" stroke-dasharray="3 3"/>`;
       o.rows.forEach((row, i) => {
-        const y = base(i), col = row.color || "var(--ink-2)", H = pitch - 10;
-        back += `<path d="M${x0} ${y}H${x1}" stroke="var(--rule)" stroke-width="1.5"/>`;
-        const lane = (k) => y - 6 - (k || 0) * 6; // lanes stack upward, 6 px apart
-        if (row.kind === "events") for (const d of row.data) { const [u, k] = [].concat(d); marks += `<circle cx="${X(u)}" cy="${row.lanes ? lane(k) + 2 : y - 6}" r="${row.lanes ? 2.5 : 3.5}" fill="${col}"/>`; }
-        else if (row.kind === "lanes") for (const [a, b, k, c] of row.data) marks += `<rect x="${X(a)}" y="${lane(k) - 1}" width="${f1(Math.max(2, (b - a) * o.w))}" height="4" fill="${c || col}"/>`;
-        else if (row.kind === "stacks") for (const [u, k] of row.data) for (let j = 0; j < k; j++) marks += `<rect x="${f1(+X(u) - 2)}" y="${y - 5 - j * 5}" width="4" height="4" fill="${col}"/>`;
-        else if (row.kind === "values") {
-          // measured values: dots, joined only across short gaps, so missing time stays empty
-          // the row spans the values' own range: a schematic has no value axis
-          const vs = row.data.map((d) => d[1]), lo = Math.min(...vs), hi = Math.max(...vs), Hv = pitch - 8;
-          const gap = row.gap ?? 0.06, P2 = row.data.map(([u, v]) => [+X(u), f1(y - 2 - ((v - lo) / (hi - lo || 1)) * Hv)]);
+        const y = base(i), cy = mid(i), col = row.color || "var(--ink-2)", compact = ph(row) < 20, H = ph(row) - 10;
+        if (row.kind !== "density") back += `<path d="M${x0} ${y}H${x1}" stroke="var(--rule)" stroke-width="${compact ? 1 : 1.5}"/>`;
+        if (row.kind === "events") for (const u of row.data) marks += `<circle cx="${X(u)}" cy="${cy}" r="${compact ? 2.8 : 3.5}" fill="${col}"/>`;
+        else if (row.kind === "squares") for (const u of row.data) marks += `<rect x="${f1(+X(u) - 3)}" y="${f1(cy - 3)}" width="6" height="6" fill="${col}"/>`;
+        else if (row.kind === "binary") for (const [u, v] of row.data) marks += GA.glyph("circle", +X(u), cy, v ? { size: 8, fill: col } : { size: 7, fill: "var(--paper)", ring: col, ringW: 1.5 });
+        else if (row.kind === "persist") {
+          const { from, to, at = [] } = row.data;
+          marks += `<rect x="${X(from)}" y="${f1(cy - 2)}" width="${f1((to - from) * o.w)}" height="4" fill="${row.light || col}"/>` + at.map((u) => `<circle cx="${X(u)}" cy="${cy}" r="2.8" fill="${col}"/>`).join("");
+        } else if (row.kind === "values") {
+          // measured values: dots, joined only across short gaps, so missing time stays empty;
+          // the row spans the values' own range, as a schematic has no value axis
+          const vs = row.data.map((d) => d[1]), lo = Math.min(...vs), hi = Math.max(...vs), Hv = ph(row) - 8, L = row.levels;
+          const vy = (v) => f1(y - 2 - (L ? Math.round(((v - lo) / (hi - lo || 1)) * (L - 1)) / (L - 1) : (v - lo) / (hi - lo || 1)) * Hv);
+          const gap = row.gap ?? 0.06, P2 = row.data.map(([u, v]) => [+X(u), vy(v)]);
           let d = "";
-          P2.forEach(([px, py], j) => { d += (j && row.data[j][0] - row.data[j - 1][0] <= gap ? "L" : "M") + `${f1(px)} ${py}`; });
+          P2.forEach(([px, py], j) => {
+            const join = j && row.data[j][0] - row.data[j - 1][0] <= gap;
+            d += join ? (L ? `H${f1(px)}V${py}` : `L${f1(px)} ${py}`) : `M${f1(px)} ${py}`;
+          });
           marks += `<path d="${d}" fill="none" stroke="${col}" stroke-width="1" stroke-linejoin="round" opacity=".55"/>` + P2.map(([px, py]) => `<circle cx="${f1(px)}" cy="${py}" r="1.8" fill="${col}"/>`).join("");
-        } else if (row.kind === "follow") {
-          // follow-up from the record's start to its end: an x for death, a tick for censoring
-          const { from, to, end } = row.data, ex = +X(to), cy = y - 6;
-          marks += `<path d="M${X(from)} ${cy}H${ex}" stroke="var(--ink-2)" stroke-width="1.5"/>` + GA.glyph(end === "death" ? "x" : "tick", ex, cy, { size: 10 });
+        } else if (row.kind === "density") {
+          const bw = o.w / row.data.length, mx = Math.max(...row.data), hh = compact ? 10 : 14;
+          back += `<rect x="${x0}" y="${f1(cy - hh / 2)}" width="${o.w}" height="${hh}" fill="var(--paper)" stroke="var(--rule)" stroke-width="1"/>`;
+          row.data.forEach((c, j) => { if (c > 0) marks += `<rect x="${f1(x0 + j * bw)}" y="${f1(cy - hh / 2)}" width="${f1(bw + 0.3)}" height="${hh}" fill="var(--slate-${100 * Math.min(7, 2 + Math.round((c / mx) * 5))})"/>`; });
         }
         else if (row.kind === "ticks") for (const u of row.data) marks += `<path d="M${X(u)} ${y - 12}V${y - 1}" stroke="${col}" stroke-width="2"/>`;
-        else if (row.kind === "spans") for (const [a, b] of row.data) marks += `<rect x="${X(a)}" y="${y - 10}" width="${f1((b - a) * o.w)}" height="7" fill="${col}"/>`;
+        else if (row.kind === "spans") for (const [a, b] of row.data) marks += `<rect x="${X(a)}" y="${compact ? f1(cy - 2.5) : y - 10}" width="${f1((b - a) * o.w)}" height="${compact ? 5 : 7}" fill="${col}"/>`;
         else if (row.kind === "signal") {
           const step = o.w / (row.data.length - 1);
           marks += `<path d="M${x0} ${y}${row.data.map((v, j) => `L${f1(x0 + j * step)} ${f1(y - v * H)}`).join("")}L${x1} ${y}Z" fill="${col}"/>`;
@@ -261,16 +283,33 @@
           row.data.forEach((v, j) => { if (v > 0.02) marks += `<rect x="${f1(x0 + j * bw)}" y="${f1(y - v * H)}" width="${f1(bw)}" height="${f1(v * H)}" fill="${col}"/>`; });
         } else if (row.kind === "arcs")
           for (const [a, b] of row.data) marks += `<path d="M${X(a)} ${y}Q${f1((+X(a) + +X(b)) / 2)} ${f1(y - Math.min(2 * H, (b - a) * o.w * 0.6))} ${X(b)} ${y}" fill="none" stroke="${col}" stroke-width="1.5"/>`;
-        if (row.name) ga.text(row.name, { x: x0 - 10, y: y - 6 - LABEL * 0.6, anchor: "end", role: "label", size: o.size || LABEL, color: "var(--ink-2)", at: o.at });
+        if (row.name) {
+          // a row inside a group, or a compact one, is named in tick; its group carries the label
+          const sub = compact || row.group, size = sub ? 12 : o.size || LABEL;
+          ga.text(row.name, { x: x0 - 10, y: cy - size * 0.6, anchor: "end", role: sub ? "tick" : "label", size, color: sub ? "var(--muted)" : "var(--ink-2)", at: o.at });
+        }
       });
+      // groups: contiguous rows with one group name
+      const groups = [];
+      o.rows.forEach((r, i) => { const g = groups.at(-1); if (r.group && g && g.name === r.group) g.last = i; else groups.push({ name: r.group, first: i, last: i }); });
+      const gy = (g) => (tops[g.first] + base(g.last)) / 2;
+      for (const g of groups) if (g.name) ga.text(g.name, { x: o.groupX ?? x0 - 120, y: gy(g) - LABEL * 0.6, role: "label", size: LABEL, weight: 500, color: "var(--ink)", at: o.at });
       ga.raw(back, { at: o.at, anim: "fade", t: 0.4 });
       ga.raw(marks, { at: o.at, anim: "fade", t: 0.5 });
+      if (o.end) {
+        const ex = +X(o.end.u), death = o.end.kind === "death", gyTop = top - 14;
+        ga.raw(`<path d="M${ex} ${gyTop + 6}V${bottom}" stroke="var(--ink-2)" stroke-width="1.5"${death ? "" : ` stroke-dasharray="1.5 3" stroke-linecap="round"`}/>` +
+          (death ? GA.glyph("x", ex, gyTop, { size: 11 }) : GA.glyph("circle", ex, gyTop, { size: 9, fill: "var(--paper)", ring: "var(--ink-2)", ringW: 1.5 })), { at: o.at, anim: "fade" });
+        if (o.end.label) ga.text(o.end.label, { x: ex + 9, y: gyTop - 7, role: "tick", size: 12, color: "var(--muted)", at: o.at });
+      }
       const colX = (c) => x1 + c.dx;
+      const slots = o.groupCols ? groups.map((g) => gy(g)) : o.rows.map((_, i) => mid(i));
       for (const c of o.cols || []) {
-        ga.text(c.title, { x: colX(c), y: top - 20, anchor: "end", role: "tick", size: 12, color: "var(--muted)", at: o.at });
+        // a pill column's title centres over its pills
+        ga.text(c.title, { x: c.pill ? colX(c) - (c.w || 50) / 2 : colX(c), y: top - 20, anchor: c.pill ? "middle" : "end", role: "tick", size: 12, color: "var(--muted)", at: o.at });
         c.values.forEach((v, i) => {
           if (v === null || v === undefined) return;
-          const cy = base(i) - 6;
+          const cy = slots[i];
           if (c.pill) ga.pill(String(v), { cx: colX(c) - (c.w || 50) / 2, cy, w: c.w || 50, h: 18, role: "tick", size: 12, fill: c.pill(i), color: "var(--ink)", at: o.at });
           else ga.text(String(v), { x: colX(c), y: cy - 12 * 0.6, anchor: "end", role: "tick", size: 12, color: "var(--ink-2)", at: o.at });
         });

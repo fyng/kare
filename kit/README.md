@@ -96,6 +96,6 @@ plot, left-aligned at `yTitleX`.
 | `oncoprint` | Heatmap with categorical cells, the oncoprint ([07](../core/charts/forms/07-heatmap.md)) |
 | `GA.schematic` → `block`, `cells`, `op`, `wire`, `port`, `flow`, `bracket`; `panel`, `grid` for a block opened | Architecture diagram ([27](../core/charts/forms/27-architecture-diagram.md)) |
 | `GA.schematic` → `step`, `state`, `fn`, with `block`, `cells`, `wire` | Procedure schematic ([28](../core/charts/forms/28-procedure-schematic.md)) |
-| `GA.schematic` → `tracks` (`peaks`, `signal`, `arcs`, `ticks`, `events`, `spans`, `values`, `lanes`, `stacks`, `follow`; `stripes`, pill columns), `contact`, with `bracket`, `cells` | Data schematic ([29](../core/charts/forms/29-data-schematic.md)) |
+| `GA.schematic` → `tracks` (`peaks`, `signal`, `arcs`, `ticks`, `events`, `spans`, `squares`, `values` with `levels`, `binary`, `persist`, `density`; groups, `stripes`, `end`, pill columns), `contact`, with `bracket`, `cells` | Data schematic ([29](../core/charts/forms/29-data-schematic.md)) |
 
 The chart forms' figure blocks (`../core/charts/forms/`) use every mark.
