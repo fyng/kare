@@ -70,5 +70,55 @@ each of these.
   offset (fan-in, fan-out), and then they leave and enter perpendicular to the box edge.
 - **Method boxes** all look the same: wash fill, an icon, and a short label ("LLM",
   "ML model"). Name the method by what readers know, not the algorithm, unless the
-  algorithm is the point (icons: `icons.md`).
+  algorithm is the point (icons: `icons.md`). In a schematic, where the model's
+  inside is the subject, a method box is an op block and the model's learned parts
+  are model blocks (*Schematics*).
+
+## Schematics
+
+A method figure is one of three kinds, each a form with its own rules and figures.
+Choose the kind by the question the panel answers; a figure that answers two uses
+two panels.
+
+| The panel answers | Form |
+|---|---|
+| How is the model built? | Architecture diagram ([27](charts/forms/27-architecture-diagram.md)) |
+| What happens, in what order? | Procedure schematic ([28](charts/forms/28-procedure-schematic.md)) |
+| What data go in, and in what unit? | Data schematic ([29](charts/forms/29-data-schematic.md)) |
+
+The kit's `GA.schematic` layer (`../kit/ga-schematic.js`) draws each part below.
+
+- **Blocks by role.** A **model** block is learned: `blue-100` fill, 1.5 px
+  `prussian` outline. An **op** block is a fixed step: `wash`, no outline (the method
+  box). A **data** block is an object handed on: paper, 1.5 px `context` outline. All
+  have a 6 px radius and a label of one or two words in `label`, 14 px, centred.
+- **Data are drawn as data.** A vector, a token or a feature map is a row of square
+  **cells** with 2 px paper gaps; a record is **tracks** on a shared axis; a sequence
+  is a line with its marks. The same object looks the same in every panel, so the
+  data schematic's patch is the architecture's input.
+- **Depth and repeats.** A stack of two or three copies, 5 px up and to the right,
+  says "many" (channels, layers, runs). The count goes on a bracket ("8×"), never in
+  more copies.
+- **Wires.** The path the data take is 2.5 px `prussian` with an open chevron.
+  Side paths (skips, conditioning, the observed values) are 1.5 px `ink-2`. What
+  flows back (a gradient, an update) or is sampled is 1.5 px and dashed (`5 5`).
+  Wires run straight or in right angles with 10 px rounded corners, end 6 px short
+  of their target, and do not cross; route a feedback wire around the forward path.
+  Where two paths combine, an **operator node** (paper disc, r 9, 1.5 px `prussian`,
+  + or ×) joins them.
+- **The flow band**, 24 px of `rule` with a broad head, drawn under everything,
+  carries data into a model and out of it at overview scale. One path per figure.
+- **Brackets** (square, 1.5 px `ink-2`, 6 px ticks) mark an extent ("Up to
+  10 years"), a repeat count or a group of layers, with the label outside. Braces
+  stay for matrix dimensions in `math` (*Matrices*).
+- **Steps.** A step's number in `prussian` and its name in `ink`, both 500, open
+  each column of a procedure. Within a step, what the step acts on is `ink` and the
+  rest `context`, so the same object read across the columns shows the procedure.
+- **Colour.** The model's parts take the blue of the model role; kinds of record take
+  identity slots in order (`color.md`); an ordered property of the data (resolution,
+  depth, time) takes steps of one ramp. Everything else is `ink-2`, `context` or
+  `wash`. A schematic has at most one accent: the part the paper adds.
+- **Text.** Names in `label` (14 px), shapes and sizes in `tick` (12 px, `muted`),
+  notation in `math` where the paper uses it. No title inside the drawing; the panel
+  title and the legend explain it.
 

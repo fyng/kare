@@ -12,6 +12,11 @@ takes the next number, and a retired number is not reused. `../../INDEX.md` list
 every form with its figures, and `out/` holds one contact sheet per family
 (`out/sheet-anatomy.png`), laying out every figure of its forms.
 
+Three forms are schematics (`kind: schematic`, 27–29): they explain a method or the
+shape of its data instead of reporting evidence. They live here so that they share
+the form file, the figure blocks and the contact sheet; their grammar is
+`../illustration.md`, *Schematics*.
+
 Sizes are px on the abstract canvas. `../../formats/publication/README.md` gives the
 print equivalents that every form shares; a form's own print sizes are in its file.
 
@@ -30,6 +35,7 @@ row lists exactly its forms.
 | Composition (`composition`) | [08 · Composition bars](forms/08-composition-bars.md), [14 · Composition columns](forms/14-composition-columns.md), [26 · Unit columns](forms/26-unit-columns.md) |
 | Embedding (`embedding`) | [20 · Labelled embedding](forms/20-labelled-embedding.md) |
 | Anatomy and phylogeny (`anatomy`) | [22 · Body map](forms/22-body-map.md), [23 · Route map](forms/23-route-map.md), [24 · Clone tree](forms/24-clone-tree.md) |
+| Schematics (`schematic`) | [27 · Architecture diagram](forms/27-architecture-diagram.md), [28 · Procedure schematic](forms/28-procedure-schematic.md), [29 · Data schematic](forms/29-data-schematic.md) |
 
 ## Figures
 
@@ -128,6 +134,9 @@ Start from the data's job.
 | A few items per unit, each with a state (metastases per patient) | Unit columns ([26](forms/26-unit-columns.md)) |
 | Parts of a whole, a few units | 100 % stacked bars ([08](forms/08-composition-bars.md)) |
 | Parts of a whole, many samples | Stacked columns grouped by dominant part ([14](forms/14-composition-columns.md)) |
+| How a model is built: its modules and the path data take through them | Architecture diagram ([27](forms/27-architecture-diagram.md)) |
+| The steps of a method: what each step does and what passes between them | Procedure schematic ([28](forms/28-procedure-schematic.md)) |
+| What data a method takes in: their kinds, extent, counts and the unit it reads | Data schematic ([29](forms/29-data-schematic.md)) |
 | One share per location in space | Proportion dials in small multiples (`../illustration.md`) |
 | Two measures on different scales | Two panels that share the x-axis |
 | One number is the story | Set the number large, in `head` or `take`, with its n |

@@ -31,14 +31,15 @@ const files = walk("");
 const docs = files.filter((f) => f.endsWith(".md") && f !== "INDEX.md");
 
 // ---- chart forms ----------------------------------------------------------------
-const KINDS = ["chart"];
+const KINDS = ["chart", "schematic"];
 const families = readFamilies();
 const kitSrc = files.filter((f) => f.startsWith("kit/") && f.endsWith(".js")).map(read).join("\n");
-// ch.hbars -> `ch.hbars = (`; GA.radial -> `GA.radial = `; GA.bio.body -> `B.body = `
+// ch.hbars -> `ch.hbars = (`; GA.radial -> `GA.radial = `; GA.bio.body -> `B.body = `;
+// GA.schematic.block -> `S.block = `
 const kitDefined = (call) => {
   const parts = call.split(".");
   const name = parts.pop();
-  const owner = parts.join(".") === "GA.bio" ? "B" : parts.join(".");
+  const owner = { "GA.bio": "B", "GA.schematic": "S" }[parts.join(".")] || parts.join(".");
   return new RegExp(`\\b${owner.replace(".", "\\.")}\\.${name}\\s*=`).test(kitSrc);
 };
 const slugOf = (n, name) => `${n}-${name.toLowerCase().replace(/ vs /g, "-").replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "")}`;

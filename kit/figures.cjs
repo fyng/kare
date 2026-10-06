@@ -95,6 +95,7 @@ function page(fig, { kitDir, title = "", desc = "" }) {
 <script src="${k("anatomy.js")}"></script>
 <script src="${k("ga-bio.js")}"></script>
 <script src="${k("ga-charts.js")}"></script>
+<script src="${k("ga-schematic.js")}"></script>
 </head>
 <body>
 <script>

@@ -12,6 +12,7 @@ on it.
 | `ga-kit.css`, `ga-kit.js` | Layout, type roles, motion, lint. The CSS imports `../core/tokens.css` |
 | `ga-charts.js` | Chart forms (`../core/charts/`) |
 | `ga-bio.js` | Cells, tissue, body maps, zooms (`../core/illustration.md`) |
+| `ga-schematic.js` | Blocks, cells, wires, flow bands, brackets, steps and tracks for schematics (`../core/illustration.md`, *Schematics*) |
 | `anatomy.js` | The anatomy the body map draws: a curated Expression Atlas anatomogram (CC BY 4.0). Load it before `ga-bio.js` |
 | `icons.js` | Icons (`../core/icons.md`) |
 | `render.cjs` | PNG / MP4 / WebM renderer; also renders the figure blocks of Markdown specs |
@@ -28,6 +29,7 @@ rendered from its own folder:
 <script src="../design-system/kit/ga-kit.js"></script>
 <script src="../design-system/kit/ga-bio.js"></script>
 <script src="../design-system/kit/ga-charts.js"></script>
+<script src="../design-system/kit/ga-schematic.js"></script>
 ```
 
 ```bash
@@ -92,5 +94,8 @@ plot, left-aligned at `yTitleX`.
 | `swimmer` | Swimmer plot, the follow-up line carrying relapse ([25](../core/charts/forms/25-swimmer-plot.md)) |
 | `units` | Unit columns ([26](../core/charts/forms/26-unit-columns.md)) |
 | `oncoprint` | Heatmap with categorical cells, the oncoprint ([07](../core/charts/forms/07-heatmap.md)) |
+| `GA.schematic` → `block`, `cells`, `op`, `wire`, `port`, `flow`, `bracket` | Architecture diagram ([27](../core/charts/forms/27-architecture-diagram.md)) |
+| `GA.schematic` → `step`, with `block`, `cells`, `wire` | Procedure schematic ([28](../core/charts/forms/28-procedure-schematic.md)) |
+| `GA.schematic` → `tracks`, with `bracket`, `cells` | Data schematic ([29](../core/charts/forms/29-data-schematic.md)) |
 
 The chart forms' figure blocks (`../core/charts/forms/`) use every mark.
