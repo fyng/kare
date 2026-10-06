@@ -97,7 +97,9 @@ block opened beneath it, as a zoom.
   (`../../illustration.md`, *Zoom*).
 - **Inside, one lane per representation**, each entering from the left in its own
   shape (a grid for pairs, cells for the sequence) and leaving at the right. Sub-layers
-  are model blocks on their lane; what crosses between lanes is a 1.5 px wire.
+  sit on their lane, coloured by type (attention, transition, projection) in tints
+  of identity slots with a key, so the model's blue stays on the stages above. What
+  crosses between lanes is a 1.5 px wire.
 
 ![Language-model embeddings and the sequence summed into a folding trunk of 48 blocks and a structure module of 8, with recycling over the top; one folding block opened into a pair lane and a sequence lane](out/27-architecture-diagram.a-block-opened.png)
 
@@ -123,16 +125,24 @@ ga.text("Recycling", { x: 499, y: 18, role: "note", size: 13, anchor: "middle" }
 // one folding block, opened
 const P = S.panel({ x: 200, y: 200, w: 470, h: 184, label: "Folding block" });
 ga.raw(`<path d="M312 138L${P.l} ${P.t}M412 138L${P.r} ${P.t}" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="1 4" stroke-linecap="round"/>`);
-const pair = S.grid({ x: 110, y: 222, rows: 5, cols: 5, fill: (i, j) => tok(`blue-${[100, 200, 300][(i * 3 + j * 2) % 3]}`) });
-const res = S.cells({ x: 88, y: 330, n: 6, cell: 12, fill: (i) => tok(`blue-${[200, 300, 200, 400, 300, 200][i]}`) });
+const pair = S.grid({ x: 110, y: 222, rows: 5, cols: 5, fill: (i, j) => tok(`slate-${[100, 200, 300][(i * 3 + j * 2) % 3]}`) });
+const res = S.cells({ x: 88, y: 330, n: 6, cell: 12, fill: (i) => tok(`slate-${[200, 300, 200, 400, 300, 200][i]}`) });
 ga.text("Pair", { x: 100, y: 239, anchor: "end", role: "label", size: 14, color: "var(--ink-2)" });
 ga.text("Sequence", { x: 78, y: 327, anchor: "end", role: "label", size: 14, color: "var(--ink-2)" });
-const prod = S.block({ x: 336, y: 229, w: 104, h: 36, label: "Outer product" });
-const tri = S.block({ x: 462, y: 225, w: 96, h: 44, label: "Triangle\nupdate" });
-const ptr = S.block({ x: 576, y: 229, w: 80, h: 36, label: "Transition" });
-const bias = S.block({ x: 232, y: 272, w: 70, h: 30, label: "Bias" });
-const att = S.block({ x: 222, y: 318, w: 90, h: 36, label: "Attention" });
-const str = S.block({ x: 343, y: 318, w: 90, h: 36, label: "Transition" });
+// sub-layers coloured by type: attention, transition (a per-position MLP), projection
+const KIND = { att: "violet", mlp: "teal", proj: "ochre" };
+const sub = (o, k) => S.block({ ...o, fill: tok(`${KIND[k]}-100`), stroke: tok(`${KIND[k]}-500`) });
+const prod = sub({ x: 336, y: 229, w: 104, h: 36, label: "Outer product" }, "proj");
+const tri = sub({ x: 462, y: 225, w: 96, h: 44, label: "Triangle\nupdate" }, "att");
+const ptr = sub({ x: 576, y: 229, w: 80, h: 36, label: "Transition" }, "mlp");
+const bias = sub({ x: 232, y: 272, w: 70, h: 30, label: "Bias" }, "proj");
+const att = sub({ x: 222, y: 318, w: 90, h: 36, label: "Attention" }, "att");
+const str = sub({ x: 343, y: 318, w: 90, h: 36, label: "Transition" }, "mlp");
+// the key, under the lanes' inputs
+[["Attention", "att"], ["Transition", "mlp"], ["Projection", "proj"]].forEach(([name, k], i) => {
+  ga.raw(`<rect x="24" y="${354 + i * 18}" width="12" height="12" rx="2" fill="${tok(`${KIND[k]}-100`)}" stroke="${tok(`${KIND[k]}-500`)}" stroke-width="1.5"/>`);
+  ga.text(name, { x: 42, y: 353 + i * 18, role: "tick", size: 12, color: "var(--ink-2)" });
+});
 // the pair lane
 S.wire([S.port(pair, "r"), S.port(prod, "l")], { from: pair, to: prod });
 S.wire([S.port(prod, "r"), S.port(tri, "l")], { from: prod, to: tri });

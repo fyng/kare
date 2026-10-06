@@ -19,7 +19,7 @@ It reads left to right, or top to bottom when the steps are tall.
   (cells, tracks; *Schematics*, `../../illustration.md`). Name each step with a verb
   or a noun the reader knows, one or two words.
 - **The forward path is the main wire**, 2.5 px `prussian`. **What feeds back** (a
-  gradient, an update, a target) is a 1.5 px wire, dashed, routed around the
+  gradient, an update, a target) is a 1.5 px `accent` wire, dashed, routed around the
   forward path, above it where there is room, with square corners rounded at 10 px, and named once in `muted`
   beside it ("gradient").
 - **Two things compared** (predicted against observed, a policy against the
@@ -49,7 +49,7 @@ S.wire([S.port(pred, "r"), { x: 548, y: 98 }, { x: 548, y: 138 }, S.port(loss, "
 S.wire([S.port(batch, "b"), { x: 68, y: 192 }, S.port(obs, "l")], { tone: "minor", from: batch, to: obs });
 S.wire([S.port(obs, "r"), { x: 548, y: 192 }, { x: 548, y: 154 }, S.port(loss, "l", 36 / 56)], { tone: "minor", from: obs, to: loss });
 // the gradient, fed back outside the forward path
-S.wire([S.port(loss, "t"), { x: 596, y: 38 }, { x: 334, y: 38 }, S.port(model, "t")], { tone: "minor", color: "var(--prussian)", dash: true, from: loss, to: model });
+S.wire([S.port(loss, "t"), { x: 596, y: 38 }, { x: 334, y: 38 }, S.port(model, "t")], { tone: "minor", color: "var(--accent)", dash: true, from: loss, to: model });
 ga.text("gradient", { x: 440, y: 16, role: "note", size: 13 });
 ```
 
@@ -63,13 +63,13 @@ the thing itself, and ink only what that step touches.
   both 500 (`S.step`). The columns share a top line and a width.
 - **A state is a cartoon, not a dot.** Draw the object at each node small, the way
   the paper's reader knows it: a patient's record as a card of mini tracks, a board
-  as a board. A child is its parent with the action added, in that action's colour,
+  as a board. A child is its parent with the action added, in that action's colour (identity slots, not blue, which is the model's),
   so the tree reads as histories branching.
 - **The same tree in every column, in the same place**, depth levels on dashed
   `rule` guides across the figure. What the step acts on is `ink`: states with an
   `ink-2` outline and their colours, edges 2.5 px with a head. The rest is
   `context`: grey cards, 1.5 px edges.
-- **What a step adds is `prussian`**: new states outlined in it, a rollout as a
+- **What a step adds is `accent`**: new states outlined in it, a rollout as a
   dashed 2.5 px arrow, the value running back up the path. Values are written as the
   paper writes them, a function of the state, *v*( ) and *r*( ) (`S.fn`), and edge
   quantities (*Q*, *P*) sit beside their edge in `math`, `ink` on the chosen edge
@@ -79,9 +79,9 @@ the thing itself, and ink only what that step touches.
 
 ```js figure=steps-in-a-row w=784 h=456
 const S = GA.schematic(ga);
-const INK = "var(--ink)", CTX = "var(--context)", PRU = "var(--prussian)", MUT = "var(--muted)";
+const INK = "var(--ink)", CTX = "var(--context)", PRU = "var(--accent)", MUT = "var(--muted)";
 // a state is the record so far: earlier therapy, then one interval per action (a, b)
-const ACT = { a: "var(--cat-1)", b: "var(--cat-2)" };
+const ACT = { a: "var(--cat-3)", b: "var(--cat-2)" };
 const record = (acts) => [
   { kind: "spans", data: [[0, 0.28, "var(--ink-2)"], ...acts.map((c, k) => [0.3 + 0.17 * k + 0.01, 0.3 + 0.17 * (k + 1), ACT[c]])] },
   { kind: "events", data: [0.06, 0.16, 0.26, ...acts.map((_, k) => 0.38 + 0.17 * k)] },

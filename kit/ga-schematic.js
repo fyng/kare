@@ -184,10 +184,10 @@
     // mini tracks: rows [{ kind: "spans" | "events", data, colors? }], data as in
     // S.tracks (spans may carry a colour: [a, b, colour]). tone "ink" draws the marks
     // in their colours with an ink-2 outline; "context" greys the whole card out;
-    // "add" outlines it in prussian (a state a step creates).
+    // "add" outlines it in accent (a state a step creates).
     S.state = (o) => {
       const w = o.w || 60, h = o.h || 38, x = o.cx - w / 2, y = o.cy - h / 2, tone = o.tone || "ink";
-      const grey = tone === "context", edge = grey ? "var(--context)" : tone === "add" ? "var(--prussian)" : "var(--ink-2)";
+      const grey = tone === "context", edge = grey ? "var(--context)" : tone === "add" ? "var(--accent)" : "var(--ink-2)";
       const rows = o.rows || [], pitch = (h - 6) / Math.max(1, rows.length), X = (u) => f1(x + 5 + u * (w - 10));
       let m = `<rect x="${f1(x)}" y="${f1(y)}" width="${w}" height="${h}" rx="4" fill="var(--paper)" stroke="${edge}" stroke-width="${tone === "add" ? 2 : 1.5}"/>`;
       rows.forEach((r, i) => {
