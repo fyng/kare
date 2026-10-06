@@ -216,9 +216,12 @@
     //     events: positions 0..1 (dots); ticks: positions 0..1 (genomic marks);
     //     spans: [[a, b], …] (intervals); signal: values 0..1 at even steps (a smooth
     //     profile); peaks: values 0..1 per bin (coverage, as bars); arcs: [[a, b], …]
-    //     (junctions, contacts between two positions)
+    //     (junctions, contacts between two positions); values: [[u, v], …] (measurements,
+    //     joined across gaps ≤ row.gap); lanes: [[a, b, lane, colour?], …] (concurrent
+    //     intervals); stacks: [[u, n], …] (n findings at one time); events may take
+    //     [u, lane] with row.lanes; follow: { from, to, end: "death" | "censor" }
     //   patches: n dashed dividers that cut the axis into n equal patches;
-    //   stripes: every other patch in wash
+    //   stripes: every other patch in wash; dividers: false drops the dashed lines
     //   cols: [{ title, values, dx, pill }]: a table at right, one value per row, its
     //     right edge dx from the axis end; pill: (i) => fill sets each value in a pill
     // Returns { rowY(i): baseline, x0, x1, top, bottom, patchX(k), colX(c) }.
@@ -227,11 +230,27 @@
       const X = (u) => f1(x0 + u * o.w), base = (i) => top + (i + 1) * pitch - 6, P = o.patches || 1;
       let back = "", marks = "";
       if (o.stripes) for (let k = 1; k < P; k += 2) back += `<rect x="${X(k / P)}" y="${top - 4}" width="${f1(o.w / P)}" height="${bottom - top + 4}" fill="var(--wash)"/>`;
-      if (o.patches) for (let k = 1; k < P; k++) back += `<path d="M${X(k / P)} ${top - 4}V${bottom}" stroke="var(--rule)" stroke-width="1.5" stroke-dasharray="3 3"/>`;
+      if (o.patches && o.dividers !== false) for (let k = 1; k < P; k++) back += `<path d="M${X(k / P)} ${top - 4}V${bottom}" stroke="var(--rule)" stroke-width="1.5" stroke-dasharray="3 3"/>`;
       o.rows.forEach((row, i) => {
         const y = base(i), col = row.color || "var(--ink-2)", H = pitch - 10;
         back += `<path d="M${x0} ${y}H${x1}" stroke="var(--rule)" stroke-width="1.5"/>`;
-        if (row.kind === "events") for (const u of row.data) marks += `<circle cx="${X(u)}" cy="${y - 6}" r="3.5" fill="${col}"/>`;
+        const lane = (k) => y - 6 - (k || 0) * 6; // lanes stack upward, 6 px apart
+        if (row.kind === "events") for (const d of row.data) { const [u, k] = [].concat(d); marks += `<circle cx="${X(u)}" cy="${row.lanes ? lane(k) + 2 : y - 6}" r="${row.lanes ? 2.5 : 3.5}" fill="${col}"/>`; }
+        else if (row.kind === "lanes") for (const [a, b, k, c] of row.data) marks += `<rect x="${X(a)}" y="${lane(k) - 1}" width="${f1(Math.max(2, (b - a) * o.w))}" height="4" fill="${c || col}"/>`;
+        else if (row.kind === "stacks") for (const [u, k] of row.data) for (let j = 0; j < k; j++) marks += `<rect x="${f1(+X(u) - 2)}" y="${y - 5 - j * 5}" width="4" height="4" fill="${col}"/>`;
+        else if (row.kind === "values") {
+          // measured values: dots, joined only across short gaps, so missing time stays empty
+          // the row spans the values' own range: a schematic has no value axis
+          const vs = row.data.map((d) => d[1]), lo = Math.min(...vs), hi = Math.max(...vs), Hv = pitch - 8;
+          const gap = row.gap ?? 0.06, P2 = row.data.map(([u, v]) => [+X(u), f1(y - 2 - ((v - lo) / (hi - lo || 1)) * Hv)]);
+          let d = "";
+          P2.forEach(([px, py], j) => { d += (j && row.data[j][0] - row.data[j - 1][0] <= gap ? "L" : "M") + `${f1(px)} ${py}`; });
+          marks += `<path d="${d}" fill="none" stroke="${col}" stroke-width="1" stroke-linejoin="round" opacity=".55"/>` + P2.map(([px, py]) => `<circle cx="${f1(px)}" cy="${py}" r="1.8" fill="${col}"/>`).join("");
+        } else if (row.kind === "follow") {
+          // follow-up from the record's start to its end: an x for death, a tick for censoring
+          const { from, to, end } = row.data, ex = +X(to), cy = y - 6;
+          marks += `<path d="M${X(from)} ${cy}H${ex}" stroke="var(--ink-2)" stroke-width="1.5"/>` + GA.glyph(end === "death" ? "x" : "tick", ex, cy, { size: 10 });
+        }
         else if (row.kind === "ticks") for (const u of row.data) marks += `<path d="M${X(u)} ${y - 12}V${y - 1}" stroke="${col}" stroke-width="2"/>`;
         else if (row.kind === "spans") for (const [a, b] of row.data) marks += `<rect x="${X(a)}" y="${y - 10}" width="${f1((b - a) * o.w)}" height="7" fill="${col}"/>`;
         else if (row.kind === "signal") {
