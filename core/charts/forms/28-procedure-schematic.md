@@ -30,27 +30,27 @@ It reads left to right, or top to bottom when the steps are tall.
 
 ![One training step: a batch, augmented, passed through the model; the prediction compared with the observed values; the loss's gradient fed back to the model](out/28-procedure-schematic.main.png)
 
-```js figure=main w=660 h=218
+```js figure=main w=640 h=218
 const S = GA.schematic(ga);
 const batch = S.block({ x: 24, y: 76, w: 88, h: 44, role: "data", label: "Batch" });
-const aug = S.block({ x: 152, y: 76, w: 96, h: 44, role: "op", label: "Augment" });
-const model = S.block({ x: 288, y: 72, w: 112, h: 52, role: "model", label: "Model" });
-const pred = S.cells({ x: 448, y: 90, n: 6, cell: 16, fill: (i) => tok(`blue-${[300, 500, 400, 600, 300, 500][i]}`) });
-const obs = S.cells({ x: 448, y: 184, n: 6, cell: 16, fill: (i) => tok(`slate-${[400, 600, 400, 700, 300, 600][i]}`) });
-ga.text("Predicted", { x: 448, y: 68, role: "tick", size: 12, color: "var(--muted)" });
-ga.text("Observed", { x: 448, y: 162, role: "tick", size: 12, color: "var(--muted)" });
-const loss = S.block({ x: 584, y: 118, w: 60, h: 56, role: "op", label: "Loss" });
+const aug = S.block({ x: 146, y: 76, w: 96, h: 44, role: "op", label: "Augment" });
+const model = S.block({ x: 278, y: 72, w: 112, h: 52, role: "model", label: "Model" });
+const pred = S.cells({ x: 432, y: 90, n: 6, cell: 16, fill: (i) => tok(`blue-${[300, 500, 400, 600, 300, 500][i]}`) });
+const obs = S.cells({ x: 432, y: 184, n: 6, cell: 16, fill: (i) => tok(`slate-${[400, 600, 400, 700, 300, 600][i]}`) });
+ga.text("Predicted", { x: 432, y: 68, role: "tick", size: 12, color: "var(--muted)" });
+ga.text("Observed", { x: 432, y: 162, role: "tick", size: 12, color: "var(--muted)" });
+const loss = S.block({ x: 566, y: 118, w: 60, h: 56, role: "op", label: "Loss" });
 // the forward path
 S.wire([S.port(batch, "r"), S.port(aug, "l")], { from: batch, to: aug });
 S.wire([S.port(aug, "r"), S.port(model, "l")], { from: aug, to: model });
 S.wire([S.port(model, "r"), S.port(pred, "l")], { from: model, to: pred });
-S.wire([S.port(pred, "r"), { x: 566, y: 98 }, { x: 566, y: 138 }, S.port(loss, "l", 20 / 56)], { tone: "minor", from: pred, to: loss });
+S.wire([S.port(pred, "r"), { x: 548, y: 98 }, { x: 548, y: 138 }, S.port(loss, "l", 20 / 56)], { tone: "minor", from: pred, to: loss });
 // the observed values go round the model, straight to the comparison
 S.wire([S.port(batch, "b"), { x: 68, y: 192 }, S.port(obs, "l")], { tone: "minor", from: batch, to: obs });
-S.wire([S.port(obs, "r"), { x: 566, y: 192 }, { x: 566, y: 154 }, S.port(loss, "l", 36 / 56)], { tone: "minor", from: obs, to: loss });
+S.wire([S.port(obs, "r"), { x: 548, y: 192 }, { x: 548, y: 154 }, S.port(loss, "l", 36 / 56)], { tone: "minor", from: obs, to: loss });
 // the gradient, fed back outside the forward path
-S.wire([S.port(loss, "t"), { x: 614, y: 38 }, { x: 344, y: 38 }, S.port(model, "t")], { tone: "minor", color: "var(--prussian)", dash: true, from: loss, to: model });
-ga.text("gradient", { x: 456, y: 16, role: "note", size: 13 });
+S.wire([S.port(loss, "t"), { x: 596, y: 38 }, { x: 334, y: 38 }, S.port(model, "t")], { tone: "minor", color: "var(--prussian)", dash: true, from: loss, to: model });
+ga.text("gradient", { x: 440, y: 16, role: "note", size: 13 });
 ```
 
 ## Steps in a row
@@ -77,7 +77,7 @@ the thing itself, and ink only what that step touches.
 
 ![A treatment search in four steps over patient-record cards: select a path by Q, expand its leaf into two new histories, evaluate one by its value and a rollout to the end of the record, back the value up the path](out/28-procedure-schematic.steps-in-a-row.png)
 
-```js figure=steps-in-a-row w=816 h=456
+```js figure=steps-in-a-row w=784 h=456
 const S = GA.schematic(ga);
 const INK = "var(--ink)", CTX = "var(--context)", PRU = "var(--prussian)", MUT = "var(--muted)";
 // a state is the record so far: earlier therapy, then one interval per action (a, b)
@@ -88,7 +88,7 @@ const record = (acts) => [
 ];
 const HIST = { R: "", A: "a", B: "b", C: "ba", D: "bb", E: "baa", F: "bab", T: "baab" };
 const KIDS = { R: ["A", "B"], B: ["C", "D"], C: ["E", "F"] };
-const at = (x0) => ({ R: [x0 + 90, 96], A: [x0 + 40, 172], B: [x0 + 130, 172], C: [x0 + 92, 248], D: [x0 + 166, 248], E: [x0 + 52, 324], F: [x0 + 128, 324], T: [x0 + 52, 412] });
+const at = (x0) => ({ R: [x0 + 86, 96], A: [x0 + 38, 172], B: [x0 + 126, 172], C: [x0 + 92, 248], D: [x0 + 160, 248], E: [x0 + 52, 324], F: [x0 + 128, 324], T: [x0 + 52, 412] });
 // per step: tone of each state, inked edges, edges a step adds, the edge label
 const STEPS = [
   { name: "Select", nodes: "RABCD", ink: "RBC", add: "", edges: ["R-B", "B-C"], label: "Q" },
@@ -97,14 +97,14 @@ const STEPS = [
   { name: "Back up", nodes: "RABCDEF", ink: "RBCE", add: "", edges: [], up: ["E-C", "C-B", "B-R"] },
 ];
 // depth guides, across every column
-ga.raw([134, 210, 286].map((y) => `<path d="M16 ${y}H800" stroke="var(--rule)" stroke-width="1" stroke-dasharray="3 3"/>`).join(""));
+ga.raw([134, 210, 286].map((y) => `<path d="M16 ${y}H768" stroke="var(--rule)" stroke-width="1" stroke-dasharray="3 3"/>`).join(""));
 const H = 19; // half a card's height
 const edgeLabel = (p, q, str, color) => {
   const mx = (p[0] + q[0]) / 2, my = (p[1] + q[1]) / 2, right = q[0] >= p[0];
   ga.text(`*${str}*`, { x: mx + (right ? 14 : -14), y: my - 10, anchor: right ? "start" : "end", role: "math", size: 15, color });
 };
 STEPS.forEach((st, i) => {
-  const x0 = 16 + i * 196, P = at(x0);
+  const x0 = 16 + i * 188, P = at(x0);
   S.step(i + 1, st.name, { x: x0, y: 18 });
   for (const [p, kids] of Object.entries(KIDS))
     for (const q of kids) {
@@ -116,7 +116,7 @@ STEPS.forEach((st, i) => {
       if (st.label && (p === "R" || p === "B" ? i === 0 : i === 1) && kids.length) edgeLabel(P[p], P[q], st.label, on ? INK : add ? PRU : MUT);
     }
   const card = {};
-  for (const k of st.nodes) card[k] = S.state({ cx: P[k][0], cy: P[k][1], rows: record(HIST[k].split("").filter(Boolean)), tone: st.add.includes(k) ? "add" : st.ink.includes(k) ? "ink" : "context" });
+  for (const k of st.nodes) card[k] = S.state({ cx: P[k][0], cy: P[k][1], w: 56, rows: record(HIST[k].split("").filter(Boolean)), tone: st.add.includes(k) ? "add" : st.ink.includes(k) ? "ink" : "context" });
   if (i === 2) {
     S.wire([{ x: P.E[0], y: P.E[1] + H + 4 }, { x: P.T[0], y: P.T[1] - H - 5 }], { color: PRU, width: 2.5, dash: true });
     S.fn(card.E, "v", { color: PRU });
@@ -138,4 +138,4 @@ STEPS.forEach((st, i) => {
 | Block | 1.5 px outline, 6 px radius, 14 px label | 0.5 pt, 0.6 mm radius, 6–7 pt |
 | Forward wire / feedback wire | 2.5 px / 1.5 px, `5 5` dash | 1 pt / 0.5 pt, `2 2` dash |
 | Step number and name | 16 px, 500 | 7 pt, 500 (the panel's own letter stays the panel letter) |
-| State card | 60 × 38 px, 1.5 px outline | 12 × 8 mm, 0.5 pt |
+| State card | 56 × 38 px, 1.5 px outline | 12 × 8 mm, 0.5 pt |
