@@ -65,7 +65,7 @@ svg.ga tspan.em { font-style: italic; }
 .a-sweep { animation-name: ga-sweep; animation-duration: var(--t, .7s); }
 @keyframes ga-in   { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 @keyframes ga-fade { from { opacity: 0; } to { opacity: 1; } }
-@keyframes ga-pop  { 0% { opacity: 0; transform: scale(.3); } 70% { transform: scale(1.1); } 100% { opacity: 1; transform: none; } }
+@keyframes ga-pop  { from { opacity: 0; transform: scale(.9); } to { opacity: 1; transform: none; } }
 @keyframes ga-draw { 0% { stroke-dashoffset: 1; opacity: 0; } 1% { opacity: 1; } 100% { stroke-dashoffset: 0; opacity: 1; } }
 @keyframes ga-grow { from { transform: scaleX(0); } to { transform: none; } }
 @keyframes ga-rise { from { transform: scaleY(0); } to { transform: none; } }
