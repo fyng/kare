@@ -1,7 +1,7 @@
 # Abstract: graphical abstracts
 
 The graphical abstract (the Lamina canvas) states a paper's argument in three panels.
-It plays as a 16-second animation on the web and stands as a still poster for
+It plays as an animation of about 15 seconds on the web and stands as a still poster for
 journals and slides. It builds on `../../core/`; this file adds the canvas, the
 arc, its kinds of text, type sizes and motion; the kit that draws them is `../../kit/`.
 
@@ -29,7 +29,7 @@ A graphical abstract reads like the paper's abstract:
   arc, read left to right. Three panels keep the story cut to its core.
 - **Motion follows the argument.** Things appear in the order you would explain them
   aloud, then stay put.
-- **Checked by the kit.** The lint blocks a render on overlaps, margin overflow,
+- **Checked by the kit.** The lint blocks a render on figures over 20 s, overlaps, margin overflow,
   divider crossings, and arrows or curves running through labels; a clean render is
   the check. `--force` is for drafts.
 
@@ -86,24 +86,52 @@ Roles and settings: `../../core/typography.md`.
 
 ## Motion
 
-- **Loop 16 s** (always under 20 s, no sound). Header 0–1 s, panels about 4 s each,
-  take-home at about 13.4 s, then hold. There is no closing fade: the last frame is
-  the complete figure, identical to the poster (the static image, t = 15 s). A figure that
-  explains a mechanism may run 18 s, with the poster at 17 s.
-- **Vocabulary:** `in` (rise 12 px and fade) for text; `pop` for icons and boxes;
-  `draw` for arrows and curves; `grow` for bars; `fade` for chart frames and fields;
-  `zoom` for an inset growing out of its source; `sweep` for a proportion wedge
-  filling clockwise from 12 o'clock; `move` for marks travelling into place when the
-  travel is the point (samples clustering in an embedding).
-- **Timing:** enter 0.6–0.8 s, draws 0.8–1.2 s, stagger 80 ms. Arrowheads appear
-  as their line finishes. Chart frames come before the data, and labels come after
-  the marks land.
+Motion lets a viewer follow the argument: each beat shows one step, and each key
+message gets a still beat to be taken in. Nothing moves during that beat.
+
+- **A graphic enters as one unit.** All parts of a graphic (a chart frame and its
+  axes, a legend and its timeline, a pair of patients) fade in together through
+  `ga.scene(at, fn)`. Parts are not staggered.
+- **Motion carries the flow.** Arrows draw from input to output, and what they point
+  to appears as the head lands. The only marks that move are those whose motion is
+  the finding: curves that part as they draw, bars that grow side by side, samples
+  that settle into clusters, an inset zooming out of its source. Marks being
+  compared move together.
+- **Key messages hold still, longer for longer messages.** The title and each
+  conclusion hold for `GA.readTime(str)`: 0.3 s plus 0.1 s a word, about 2 s for a
+  conclusion. Within 15 s that is a beat to take the message in, not a full read;
+  the figure ends on the complete frame, which stays up for reading. The take-home
+  enters last and needs no hold of its own. Panel titles and labels enter with their
+  graphic.
+- **Beats, in order.** Title (hold) → per panel: header and input graphic → flow
+  arrows to the method and output → a short look (0.3–0.7 s) → conclusion (hold) →
+  take-home. Each panel takes about 4 s.
+- **About 15 s, never more than 20.** Pace the figure with `ga.timeline()` and leave
+  `duration` out of `GA.build`: the figure ends half a second after its last beat,
+  and the poster is the last second. The lint fails a figure longer than 20 s. The
+  animation plays once on the web and stops on the poster.
+- **Vocabulary:** `in` (rise 12 px and fade) for text; `fade` for graphics and
+  scenes; `pop` (a slight scale-up, no overshoot) for single marks that need emphasis;
+  `draw` for arrows and curves; `grow` and `rise` for bars; `zoom` for an inset
+  growing out of its source; `sweep` for a proportion wedge filling clockwise from
+  12 o'clock; `move` for marks travelling into place.
+- **Timing:** enter 0.6–0.8 s, arrows 0.5 s, curves 0.8–1.0 s. Arrowheads appear as
+  their line finishes. Chart frames come about 0.4 s before the data, and labels
+  come after the marks land.
 - Reduced-motion users get the poster frame.
 
-**Charts in motion.** The frame fades in (0.4 s). Then marks arrive: lines draw left
-to right (1.2 s), bars grow from the baseline (80 ms stagger), points fade in. Ribbons
-and labels come last. The order is the reading order: what is measured, then what was
-found.
+```js
+const T = ga.timeline();
+ga.scene(T.read(TITLE), () => { /* kicker and title */ }, { anim: "in" });
+const notes = ga.scene(T.next(0.9), () => { /* panel input */ });       // look
+const at = T.next(0.35);
+ga.connect(notes, llm, { at, t: 0.5 });                                  // flow
+ga.text(CONCLUSION, { ..., at: T.read(CONCLUSION) });                   // hold
+```
+
+**Charts in motion.** The frame fades in (0.4 s). Then the marks being compared
+arrive together: lines draw left to right (0.8–1.0 s), bars grow from the baseline,
+points fade in. Direct labels land at the line ends as the lines finish.
 
 ## The kit
 

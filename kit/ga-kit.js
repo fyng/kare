@@ -10,8 +10,11 @@
 //   - lint(): after layout, every text, icon and arrow is checked for overlap,
 //     divider crossings and margin overflow. render.cjs refuses to render a
 //     figure that fails, and ?debug outlines every measured box.
+//   - timeline() and scene(): motion paced by reading. A scene enters every part
+//     of one graphic together; the timeline holds each key text still for a beat
+//     that grows with its length, and the duration follows from the last beat.
 //
-// Usage:  GA.build({ duration: 16, poster: 15 }, (ga) => { ga.text(...); ... });
+// Usage:  GA.build({ title, desc }, (ga) => { const T = ga.timeline(); ga.text(..., { at: T.now }); T.read(str); ... });
 //         A figure smaller than the 1600x900 canvas passes width, height and margin
 //         (a chart form's figure block: core/charts/README.md, *Figures*).
 (function () {
@@ -35,6 +38,13 @@
     math: { size: 17, lh: 1.3 }, //  variables: italic letters, upright digits (GA.bio math)
   };
   const ASCENT = 0.78; // first baseline sits this fraction of the size below the top
+  // Hold for a key message: a settle time plus a time per word. Inside a 15 s
+  // figure this is a still beat to take the message in, longer for longer
+  // messages; full reading continues on the final frame, which stays up.
+  const READ = { base: 0.3, word: 0.1 };
+  const MAX_DURATION = 20;
+  const words = (str) => String(str).replace(/[*{}]/g, "").split(/\s+/).filter(Boolean).length;
+  const readTime = (str) => READ.base + READ.word * words(str);
 
   const el = (tag, attrs = {}, parent) => {
     const n = document.createElementNS(NS, tag);
@@ -77,7 +87,7 @@
       this.opts = opts;
       this.items = [];
       this.dividers = [];
-      this.duration = opts.duration || 16;
+      this.duration = opts.duration || 16; // replaced after layout when a timeline sets it
       this.poster = opts.poster ?? this.duration - 1;
       this.W = opts.width || W; this.H = opts.height || H; this.M = opts.margin ?? MARGIN;
       this.svg = el("svg", { class: "ga", viewBox: `0 0 ${this.W} ${this.H}`, role: "img", "aria-labelledby": "ga-t ga-d", style: `--dur:${this.duration}s` });
@@ -106,6 +116,33 @@
       if (at === undefined || at === null) return el("g", {}, this.stage);
       return el("g", { class: `a-${anim}`, style: `--d:${at}s` + (t ? `;--t:${t}s` : "") }, this.stage);
     }
+    // ---- motion ---------------------------------------------------------------
+    // Everything fn draws without its own `at` enters at `at` as one unit, so the
+    // parts of one graphic arrive together instead of one after another. Parts
+    // that carry their own `at` (an arrow drawing, bars growing) keep it.
+    scene(at, fn, o = {}) {
+      const before = this.stage.childNodes.length;
+      const out = fn();
+      const g = this.wrap(at, o.anim || "fade", o.t);
+      [...this.stage.childNodes].slice(before, -1).forEach((n) => g.appendChild(n));
+      return out;
+    }
+
+    // A cursor in seconds. Beats advance it: next(dt) for a graphic or an arrow,
+    // read(str) to hold a key message still, wait(dt) to let a graphic be looked
+    // at. With no `duration` in GA.build, the figure ends half a second after
+    // the last beat.
+    timeline(start = 0) {
+      const T = {
+        now: start,
+        next(dt = 0) { const t = T.now; T.now += dt; return t; },
+        read(str, extra = 0) { const t = T.now; T.now += readTime(str) + extra; return t; },
+        wait(dt) { T.now += dt; return T.now; },
+      };
+      this.tl = T;
+      return T;
+    }
+
     add(kind, node, b, extra = {}) {
       const it = { kind, node, box: b, ...extra };
       // anchors, for connect() and for placing things relative to each other
@@ -334,6 +371,8 @@
 
   window.GA = {
     ROLE,
+    READ,
+    readTime,
     async build(opts, fn) {
       window.GA_KIT = true;
       await Promise.all(
@@ -341,7 +380,15 @@
       );
       const ga = new Kit(opts);
       fn(ga);
+      if (!opts.duration && ga.tl) {
+        // the figure lasts until its last beat or its last animation, then holds briefly
+        const last = Math.max(ga.tl.now, ...document.getAnimations().map((a) => a.effect.getComputedTiming().endTime / 1000));
+        ga.duration = Math.ceil(last + 0.5);
+        ga.poster = opts.poster ?? ga.duration - 1;
+        ga.svg.style.setProperty("--dur", `${ga.duration}s`);
+      }
       const bad = ga.lint();
+      if (ga.duration > MAX_DURATION) bad.push({ msg: `too long: ${ga.duration} s (at most ${MAX_DURATION} s; aim for about 15)`, its: [] });
       window.GA_LINT = bad.map((b) => b.msg);
       if (bad.length) console.warn("GA lint:\n" + window.GA_LINT.join("\n"));
       if (location.search.includes("debug")) ga.debug(bad);
